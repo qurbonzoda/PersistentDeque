@@ -5,7 +5,7 @@ import persistentDeque.PersistentDeque
 import persistentDeque.emptyDeque
 import java.util.*
 
-class PersistentDequeTests {
+class PersistentDequeTest {
     @Test
     fun isEmptyTests() {
         var deque = emptyDeque<String>()

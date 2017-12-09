@@ -1,11 +1,12 @@
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertThrows
 import persistentStack.PersistentStack
 import persistentStack.emptyStack
 import java.util.*
 import kotlin.NoSuchElementException
 
-class PersistentStackTests {
+class PersistentStackTest {
     @Test
     fun newStackShouldBeEmpty() {
         assertTrue(emptyStack<Int>().isEmpty())
