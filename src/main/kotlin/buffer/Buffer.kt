@@ -1,8 +1,8 @@
 package buffer
 
-val RED = 0
-val YELLOW = 1
-val GREEN = 2
+const val RED = 0
+const val YELLOW = 1
+const val GREEN = 2
 
 
 sealed class Buffer {
@@ -16,7 +16,7 @@ sealed class Buffer {
     abstract fun removeLast(): Buffer
 }
 
-class EmptyBuffer : Buffer() {
+object EmptyBuffer : Buffer() {
     override val color: Int = RED
     override val size: Int = 0
 
@@ -42,8 +42,8 @@ data class BufferOfOne(val e: Any) : Buffer() {
     override fun addFirst(element: Any) = BufferOfTwo(element, e)
     override fun addLast(element: Any) = BufferOfTwo(e, element)
 
-    override fun removeFirst() = EmptyBuffer()
-    override fun removeLast() = EmptyBuffer()
+    override fun removeFirst() = EmptyBuffer
+    override fun removeLast() = EmptyBuffer
 }
 
 data class BufferOfTwo(val e1: Any, val e2: Any) : Buffer() {
