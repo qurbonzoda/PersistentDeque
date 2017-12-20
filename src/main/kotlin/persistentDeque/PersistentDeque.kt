@@ -322,158 +322,87 @@ class PersistentDeque<T> private constructor(
         var (lhs, rhs) = level
         var (nextLhs, nextRhs) = nextLevel
 
-        fun moveOneFromNextLhsToNextRhs() {
-            assert(nextRhs is EmptyBuffer)
+        if (lhs.size >= 4) {
+            nextLhs = moveLastTwoToNextLevelBuffer(nextLhs, lhs)
+            lhs = lhs.removeLast().removeLast()
+        }
+        if (rhs.size >= 4) {
+            nextRhs = moveFirstTwoToNextLevelBuffer(nextRhs, rhs)
+            rhs = rhs.removeFirst().removeFirst()
+        }
 
-            nextRhs = BufferOfOne(nextLhs.last)
-            nextLhs = nextLhs.removeLast()
-        }
-        fun moveOneFromNextRhsToNextLhs() {
-            assert(nextLhs is EmptyBuffer)
-
-            nextLhs = BufferOfOne(nextRhs.first)
-            nextRhs = nextRhs.removeFirst()
-        }
-        fun moveTwoFromLhsToNextLhs() {
-            val xlhs = lhs
-            if (xlhs is BufferOfFour) {
-                nextLhs = nextLhs.addFirst(Pair(xlhs.e3, xlhs.e4))
-                lhs = lhs.removeLast().removeLast()
-            } else if (xlhs is BufferOfFive) {
-                nextLhs = nextLhs.addFirst(Pair(xlhs.e4, xlhs.e5))
-                lhs = lhs.removeLast().removeLast()
-            } else {
-                throw AssertionError("wrong call")
-            }
-        }
-        fun moveTwoFromRhsToNextRhs() {
-            val xrhs = rhs
-            if (xrhs is BufferOfFour) {
-                nextRhs = nextRhs.addLast(Pair(xrhs.e1, xrhs.e2))
-                rhs = rhs.removeFirst().removeFirst()
-            } else if (xrhs is BufferOfFive) {
-                nextRhs = nextRhs.addLast(Pair(xrhs.e1, xrhs.e2))
-                rhs = rhs.removeFirst().removeFirst()
-            } else {
-                throw AssertionError("wrong call")
-            }
-        }
-        fun moveOneFromNextLhsToLhs() {
-            val xlhs = lhs
-            if (xlhs is EmptyBuffer) {
-                val (e1, e2) = (nextLhs.first as Pair<Any, Any>)
-                lhs = BufferOfTwo(e1, e2)
+        if (lhs.size < 2) {
+            if (nextLhs.size > 0) {
+                lhs = moveFirstFromNextLevelBufferToLhs(nextLhs, lhs)
                 nextLhs = nextLhs.removeFirst()
-            } else if (xlhs is BufferOfOne) {
-                val (e2, e3) = (nextLhs.first as Pair<Any, Any>)
-                lhs = BufferOfThree(xlhs.e, e2, e3)
-                nextLhs = nextLhs.removeFirst()
-            } else {
-                throw AssertionError("wrong call")
+            } else if (nextRhs.size > 0) {
+                lhs = moveFirstFromNextLevelBufferToLhs(nextRhs, lhs)
+                nextRhs = nextRhs.removeFirst()
             }
         }
-        fun moveOneFromNextRhsToRhs() {
-            val xrhs = rhs
-            if (xrhs is EmptyBuffer) {
-                val (e1, e2) = (nextRhs.last as Pair<Any, Any>)
-                rhs = BufferOfTwo(e1, e2)
+        if (rhs.size < 2) {
+            if (nextRhs.size > 0) {
+                rhs = moveLastFromNextLevelBufferToRhs(nextRhs, rhs)
                 nextRhs = nextRhs.removeLast()
-            } else if (xrhs is BufferOfOne) {
-                val (e1, e2) = (nextRhs.last as Pair<Any, Any>)
-                rhs = BufferOfThree(e1, e2, xrhs.e)
-                nextRhs = nextRhs.removeLast()
-            } else {
-                throw AssertionError("wrong call")
-            }
-        }
-        fun moveTwoFromRhsToNextLhs() {
-            assert(nextRhs is EmptyBuffer)
-
-            val xrhs = rhs
-            if (xrhs is BufferOfFour) {
-                nextLhs = nextLhs.addLast(Pair(xrhs.e1, xrhs.e2))
-                rhs = rhs.removeFirst().removeFirst()
-            } else if (xrhs is BufferOfFive) {
-                nextLhs = nextLhs.addLast(Pair(xrhs.e1, xrhs.e2))
-                rhs = rhs.removeFirst().removeFirst()
-            } else {
-                throw AssertionError("wrong call")
-            }
-        }
-        fun moveOneFromNextLhsToRhs() {
-            assert(nextRhs is EmptyBuffer)
-
-            val xrhs = rhs
-            if (xrhs is EmptyBuffer) {
-                val (e1, e2) = (nextLhs.last as Pair<Any, Any>)
-                rhs = BufferOfTwo(e1, e2)
+            } else if (nextLhs.size > 0) {
+                rhs = moveLastFromNextLevelBufferToRhs(nextLhs, rhs)
                 nextLhs = nextLhs.removeLast()
-            } else if (xrhs is BufferOfOne) {
-                val (e1, e2) = (nextLhs.last as Pair<Any, Any>)
-                rhs = BufferOfThree(e1, e2, xrhs.e)
-                nextLhs = nextLhs.removeLast()
-            } else {
-                throw AssertionError("wrong call")
             }
-        }
-
-        if (nextLhs.size + nextRhs.size >= 2) {
-            if (nextLhs is EmptyBuffer) {
-                moveOneFromNextRhsToNextLhs()
-            }
-            if (nextRhs is EmptyBuffer) {
-                moveOneFromNextLhsToNextRhs()
-            }
-
-            if (lhs.size >= 4) {
-                moveTwoFromLhsToNextLhs()
-            }
-            if (rhs.size >= 4) {
-                moveTwoFromRhsToNextRhs()
-            }
-
-            if (lhs.size <= 1) {
-                moveOneFromNextLhsToLhs()
-            }
-            if (rhs.size <= 1) {
-                moveOneFromNextRhsToRhs()
-            }
-        } else if (nextLhs.size + nextRhs.size <= 1 && (lhs.size >= 2 || rhs.size >= 2)) { // nextLevel is bottom level
-            if (nextLhs is EmptyBuffer) {
-                nextLhs = nextRhs
-                nextRhs = EmptyBuffer
-            }
-            if (lhs.size >= 4) {
-                moveTwoFromLhsToNextLhs()
-            }
-            if (rhs.size >= 4) {
-                moveTwoFromRhsToNextLhs()
-            }
-
-            if (lhs.size <= 1) {
-                moveOneFromNextLhsToLhs()
-            }
-            if (rhs.size <= 1) {
-                moveOneFromNextLhsToRhs()
-            }
-        } else if (nextLhs.size + nextRhs.size <= 1 && lhs.size <= 1 && rhs.size <= 1) {
-            if (nextLhs is EmptyBuffer) {
-                nextLhs = nextRhs
-                nextRhs = EmptyBuffer
-            }
-            moveOneFromNextLhsToLhs()
         }
 
         val newLevel = DequeLevel(lhs, rhs)
-        val newNextLevel = DequeLevel(nextLhs, nextRhs)
 
         assert(newLevel.color == GREEN || (nextLhs is EmptyBuffer && nextRhs is EmptyBuffer))
 
-        if (newNextLevel.lhs is EmptyBuffer && newNextLevel.rhs is EmptyBuffer) {
+        if (nextLhs is EmptyBuffer && nextRhs is EmptyBuffer) {
             return Pair(newLevel, null)
         }
 
+        val newNextLevel = DequeLevel(nextLhs, nextRhs)
+
         return Pair(newLevel, newNextLevel)
+    }
+
+    private fun moveLastTwoToNextLevelBuffer(nextBuff: Buffer, lhs: Buffer): Buffer {
+        return when (lhs) {
+            is BufferOfFour -> nextBuff.addFirst(Pair(lhs.e3, lhs.e4))
+            is BufferOfFive -> nextBuff.addFirst(Pair(lhs.e4, lhs.e5))
+            else -> throw AssertionError("wrong call")
+        }
+    }
+
+    private fun moveFirstTwoToNextLevelBuffer(nextBuff: Buffer, rhs: Buffer): Buffer {
+        return when (rhs) {
+            is BufferOfFour -> nextBuff.addLast(Pair(rhs.e1, rhs.e2))
+            is BufferOfFive -> nextBuff.addLast(Pair(rhs.e1, rhs.e2))
+            else -> throw AssertionError("wrong call")
+        }
+    }
+
+    private fun moveLastFromNextLevelBufferToRhs(nextBuff: Buffer, rhs: Buffer): Buffer {
+        val (e1, e2) = (nextBuff.last as Pair<Any, Any>)
+        return when (rhs) {
+            is EmptyBuffer -> {
+                BufferOfTwo(e1, e2)
+            }
+            is BufferOfOne -> {
+                BufferOfThree(e1, e2, rhs.e)
+            }
+            else -> throw AssertionError("wrong call")
+        }
+    }
+
+    private fun moveFirstFromNextLevelBufferToLhs(nextBuff: Buffer, lhs: Buffer): Buffer {
+        val (e1, e2) = (nextBuff.first as Pair<Any, Any>)
+        return when (lhs) {
+            is EmptyBuffer -> {
+                BufferOfTwo(e1, e2)
+            }
+            is BufferOfOne -> {
+                BufferOfThree(lhs.e, e1, e2)
+            }
+            else -> throw AssertionError("wrong call")
+        }
     }
 
     private fun levelColor(level: DequeLevel, isBottomLevel: Boolean): Int {
