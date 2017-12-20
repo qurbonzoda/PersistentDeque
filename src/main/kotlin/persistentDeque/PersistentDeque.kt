@@ -49,14 +49,12 @@ class PersistentDeque<T> private constructor(
 
     val size: Int
         get() {
-            if (stack.isEmpty()) return 0
+            var topSubStack = stack.peek() ?: return 0
+            var stackPop = stack.pop()
+            var topLevel = topLevel(topSubStack, stackPop)
 
             var size = 0
             var depth = 0
-
-            var topSubStack = stack.peek()!!
-            var stackPop = stack.pop()
-            var topLevel = topLevel(topSubStack, stackPop)
 
             while (topLevel != null) {
                 size += (topLevel.lhs.size + topLevel.rhs.size) shl depth
@@ -72,19 +70,13 @@ class PersistentDeque<T> private constructor(
 
     val first: T?
         get() {
-            if (stack.isEmpty()) {
-                return null
-            }
-            val topLevel = stack.peek()!!.peek()!!
+            val topLevel = stack.peek()?.peek() ?: return null
             return (if (topLevel.lhs is EmptyBuffer) topLevel.rhs.first else topLevel.lhs.first) as T
         }
 
     val last: T?
         get() {
-            if (stack.isEmpty()) {
-                return null
-            }
-            val topLevel = stack.peek()!!.peek()!!
+            val topLevel = stack.peek()?.peek() ?: return null
             return (if (topLevel.rhs is EmptyBuffer) topLevel.lhs.last else topLevel.rhs.last) as T
         }
 
@@ -101,17 +93,12 @@ class PersistentDeque<T> private constructor(
     }
 
     fun removeFirst(): PersistentDeque<T> {
-        if (stack.isEmpty()) {
-            throw NoSuchElementException()
-        }
+        val topLevel = stack.peek()?.peek() ?: throw NoSuchElementException()
 
-        val topLevel = stack.peek()!!.peek()!!
-
-        val newTopLevel: DequeLevel
-        if (topLevel.lhs is EmptyBuffer) {
-            newTopLevel = DequeLevel(topLevel.lhs, topLevel.rhs.removeFirst())
+        val newTopLevel = if (topLevel.lhs is EmptyBuffer) {
+            DequeLevel(topLevel.lhs, topLevel.rhs.removeFirst())
         } else {
-            newTopLevel = DequeLevel(topLevel.lhs.removeFirst(), topLevel.rhs)
+            DequeLevel(topLevel.lhs.removeFirst(), topLevel.rhs)
         }
 
         return makeDequeRegular(topLevel, newTopLevel)
@@ -130,17 +117,12 @@ class PersistentDeque<T> private constructor(
     }
 
     fun removeLast(): PersistentDeque<T> {
-        if (stack.isEmpty()) {
-            throw NoSuchElementException()
-        }
+        val topLevel = stack.peek()?.peek() ?: throw NoSuchElementException()
 
-        val topLevel = stack.peek()!!.peek()!!
-
-        val newTopLevel: DequeLevel
-        if (topLevel.rhs is EmptyBuffer) {
-            newTopLevel = DequeLevel(topLevel.lhs.removeLast(), topLevel.rhs)
+        val newTopLevel = if (topLevel.rhs is EmptyBuffer) {
+            DequeLevel(topLevel.lhs.removeLast(), topLevel.rhs)
         } else {
-            newTopLevel = DequeLevel(topLevel.lhs, topLevel.rhs.removeLast())
+            DequeLevel(topLevel.lhs, topLevel.rhs.removeLast())
         }
 
         return makeDequeRegular(topLevel, newTopLevel)
