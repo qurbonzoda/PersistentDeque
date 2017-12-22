@@ -222,6 +222,8 @@ class PersistentDeque<T> private constructor(
             val subStack = topSubStackByRemovingTopLevel(topSubStackPop, stackPop)
             val stack = stackPopByRemovingTopLevel(topSubStackPop, stackPop)
 
+            assert(levelColor(nextLevel, subStack.isEmpty() && stack == null) != RED)
+
             makeGreenTopLevel(topLevel, nextLevel, subStack, stack)
         }
 
@@ -234,6 +236,8 @@ class PersistentDeque<T> private constructor(
                                   nextLevel: DequeLevel,
                                   subStack: PersistentStack<DequeLevel>,
                                   stack: DequeSubStack?): DequeSubStack {
+
+        assert(topLevel.color == RED)
 
         assert(subStack.isEmpty()
                 || levelColor(subStack.peek()!!, subStack.pop().isEmpty() && stack == null) == YELLOW)
@@ -275,23 +279,28 @@ class PersistentDeque<T> private constructor(
         assert(newNextLevel.color == RED
                 && (!topSubStackPopPop.isEmpty() || stackPop != null && !stackPop.stack.isEmpty()))
 
-        val nNLevel = topLevel(topSubStackPopPop, stackPop)!!
-        val isNNLevelBottomLevel = hasOnlyOneLevel(topSubStackPopPop, stackPop)
+        if (!hasOnlyOneLevel(topSubStackPopPop, stackPop)) {
+            return DequeSubStack(stackOf(newTopLevel),
+                    DequeSubStack(topSubStackPopPop.push(newNextLevel), stackPop))
+        }
 
-        return if (isNNLevelBottomLevel) {
+        val nNLevel = topLevel(topSubStackPopPop, stackPop)!!
+
+        var takeCount = if (newNextLevel.lhs.size < 2) 1 else if (newNextLevel.lhs.size > 3) -1 else 0
+        takeCount += if (newNextLevel.rhs.size < 2) 1 else if (newNextLevel.rhs.size > 3) -1 else 0
+
+        return if (nNLevel.lhs.size + nNLevel.rhs.size <= takeCount) {
             assert(nNLevel.lhs !is EmptyBuffer || nNLevel.rhs !is EmptyBuffer)
 
             val (greenNextLevel, newNNLevel) = makeRedLevelGreen(newNextLevel, nNLevel)
-            if (newNNLevel == null) {
-                if (bottomLevelColor(greenNextLevel) == YELLOW) {
-                    DequeSubStack(stackOf(greenNextLevel).push(newTopLevel), null)
-                } else {
-                    DequeSubStack(stackOf(newTopLevel),
-                            DequeSubStack(stackOf(greenNextLevel), null))
-                }
+
+            assert(newNNLevel == null)
+
+            if (bottomLevelColor(greenNextLevel) == YELLOW) {
+                DequeSubStack(stackOf(greenNextLevel).push(newTopLevel), null)
             } else {
                 DequeSubStack(stackOf(newTopLevel),
-                        DequeSubStack(topSubStackPopPop.push(newNextLevel), stackPop))
+                        DequeSubStack(stackOf(greenNextLevel), null))
             }
         } else {
             DequeSubStack(stackOf(newTopLevel),
