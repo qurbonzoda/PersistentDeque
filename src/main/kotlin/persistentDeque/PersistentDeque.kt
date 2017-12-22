@@ -25,10 +25,10 @@ private data class DequeLevel(val lhs: Buffer, val rhs: Buffer) {
 
 private val emptyLevel = DequeLevel(EmptyBuffer, EmptyBuffer)
 
-private typealias DequeSubStack = PersistentStack<DequeLevel>
+private data class DequeSubStack(val stack: PersistentStack<DequeLevel>, val next: DequeSubStack?)
 
 class PersistentDeque<T> private constructor(
-        private val stack: PersistentStack<DequeSubStack>
+        private val topSubStack: DequeSubStack?
 ) {
 
 //    fun contains(element: T): Boolean
@@ -44,13 +44,13 @@ class PersistentDeque<T> private constructor(
 //    fun listIterator(index: Int): ListIterator<T>
 
     fun isEmpty(): Boolean {
-        return stack.isEmpty()
+        return topSubStack == null
     }
 
     val size: Int
         get() {
-            var topSubStack = stack.peek() ?: return 0
-            var stackPop = stack.pop()
+            var topSubStack = this.topSubStack?.stack ?: return 0
+            var stackPop = this.topSubStack.next
             var topLevel = topLevel(topSubStack, stackPop)
 
             var size = 0
@@ -70,30 +70,30 @@ class PersistentDeque<T> private constructor(
 
     val first: T?
         get() {
-            val topLevel = stack.peek()?.peek() ?: return null
+            val topLevel = topSubStack?.stack?.peek() ?: return null
             return (if (topLevel.lhs is EmptyBuffer) topLevel.rhs.first else topLevel.lhs.first) as T
         }
 
     val last: T?
         get() {
-            val topLevel = stack.peek()?.peek() ?: return null
+            val topLevel = topSubStack?.stack?.peek() ?: return null
             return (if (topLevel.rhs is EmptyBuffer) topLevel.lhs.last else topLevel.rhs.last) as T
         }
 
     fun addFirst(value: T): PersistentDeque<T> {
-        if (stack.isEmpty()) {
+        if (topSubStack == null) {
             val level = DequeLevel(BufferOfOne(value as Any), EmptyBuffer)
-            return PersistentDeque(stack.push(stackOf(level)))
+            return PersistentDeque(DequeSubStack(stackOf(level), null))
         }
 
-        val topLevel = stack.peek()!!.peek()!!
+        val topLevel = topSubStack.stack.peek()!!
         val newTopLevel = DequeLevel(topLevel.lhs.addFirst(value as Any), topLevel.rhs)
 
         return makeDequeRegular(topLevel, newTopLevel)
     }
 
     fun removeFirst(): PersistentDeque<T> {
-        val topLevel = stack.peek()?.peek() ?: throw NoSuchElementException()
+        val topLevel = topSubStack?.stack?.peek() ?: throw NoSuchElementException()
 
         val newTopLevel = if (topLevel.lhs is EmptyBuffer) {
             DequeLevel(topLevel.lhs, topLevel.rhs.removeFirst())
@@ -105,19 +105,19 @@ class PersistentDeque<T> private constructor(
     }
 
     fun addLast(value: T): PersistentDeque<T> {
-        if (stack.isEmpty()) {
+        if (topSubStack == null) {
             val level = DequeLevel(EmptyBuffer, BufferOfOne(value as Any))
-            return PersistentDeque(stack.push(stackOf(level)))
+            return PersistentDeque(DequeSubStack(stackOf(level), null))
         }
 
-        val topLevel = stack.peek()!!.peek()!!
+        val topLevel = topSubStack.stack.peek()!!
         val newTopLevel = DequeLevel(topLevel.lhs, topLevel.rhs.addLast(value as Any))
 
         return makeDequeRegular(topLevel, newTopLevel)
     }
 
     fun removeLast(): PersistentDeque<T> {
-        val topLevel = stack.peek()?.peek() ?: throw NoSuchElementException()
+        val topLevel = topSubStack?.stack?.peek() ?: throw NoSuchElementException()
 
         val newTopLevel = if (topLevel.rhs is EmptyBuffer) {
             DequeLevel(topLevel.lhs.removeLast(), topLevel.rhs)
@@ -129,17 +129,17 @@ class PersistentDeque<T> private constructor(
     }
 
     fun toList(): List<T> {
-        if (stack.isEmpty()) {
+        if (topSubStack == null) {
             return emptyList()
         }
         val list = mutableListOf<T>()
-        fillListFromStack(stack.peek()!!, stack.pop(), 0, list)
+        fillListFromStack(topSubStack.stack, topSubStack.next, 0, list)
         return list
     }
 
 
-    private fun fillListFromStack(topSubStack: DequeSubStack,
-                                  stackPop: PersistentStack<DequeSubStack>,
+    private fun fillListFromStack(topSubStack: PersistentStack<DequeLevel>,
+                                  stackPop: DequeSubStack?,
                                   depth: Int,
                                   list: MutableList<T>) {
 
@@ -170,19 +170,19 @@ class PersistentDeque<T> private constructor(
     }
 
     private fun makeDequeRegular(topLevel: DequeLevel, newTopLevel: DequeLevel): PersistentDeque<T> {
-        val topSubStackPop = stack.peek()!!.pop()
-        val stackPop = stack.pop()
+        val topSubStackPop = this.topSubStack!!.stack.pop()
+        val stackPop = this.topSubStack.next
 
-        val isTopLevelOnlyLevel = stackPop.isEmpty() && topSubStackPop.isEmpty()
+        val isTopLevelOnlyLevel = hasOnlyOneLevel(topSubStack)
 
-        val newStack = when(colorChange(topLevel, newTopLevel, isTopLevelOnlyLevel)) {
+        val newTopSubStack = when(colorChange(topLevel, newTopLevel, isTopLevelOnlyLevel)) {
             GREEN_GREEN,
             YELLOW_GREEN,
-            YELLOW_YELLOW -> stackPop.push( topSubStackPop.push(newTopLevel) )
+            YELLOW_YELLOW -> DequeSubStack(topSubStackPop.push(newTopLevel), stackPop)
 
             GREEN_YELLOW -> when {
-                isTopLevelOnlyLevel -> stackPop.push( topSubStackPop.push(newTopLevel) )
-                else -> makeGreenNextSubStackTop(stackPop).push(topSubStackPop.push(newTopLevel))
+                isTopLevelOnlyLevel -> DequeSubStack(topSubStackPop.push(newTopLevel), stackPop)
+                else -> DequeSubStack(topSubStackPop.push(newTopLevel), makeGreenNextSubStackTop(stackPop))
             }
 
             YELLOW_RED -> makeGreenTopLevel(newTopLevel, topSubStackPop, stackPop)
@@ -190,38 +190,34 @@ class PersistentDeque<T> private constructor(
             else -> throw IllegalStateException()
         }
 
-        return PersistentDeque(newStack)
+        return PersistentDeque(newTopSubStack)
     }
 
-    private fun makeGreenNextSubStackTop(stackPop: PersistentStack<DequeSubStack>): PersistentStack<DequeSubStack> {
-        val nextSubStackTop = stackPop.peek()?.peek()
-        return when (nextSubStackTop?.let { levelColor(it, stackPop.pop().isEmpty() && stackPop.peek()!!.pop().isEmpty()) }) {
+    private fun makeGreenNextSubStackTop(stackPop: DequeSubStack?): DequeSubStack? {
+        val nextSubStackTop = stackPop?.stack?.peek()
+        return when (nextSubStackTop?.let { levelColor(it, hasOnlyOneLevel(stackPop)) }) {
             null,
             GREEN -> stackPop
 
-            RED -> {
-                val nextSubStackPop = stackPop.peek()!!.pop()
-                val stackPopPop = stackPop.pop()
-                makeGreenTopLevel(nextSubStackTop, nextSubStackPop, stackPopPop)
-            }
+            RED -> makeGreenTopLevel(nextSubStackTop, stackPop.stack.pop(), stackPop.next)
 
             else -> throw IllegalStateException()
         }
     }
 
     private fun makeGreenTopLevel(topLevel: DequeLevel,
-                                  topSubStackPop: DequeSubStack,
-                                  stackPop: PersistentStack<DequeSubStack>): PersistentStack<DequeSubStack> {
-        assert(levelColor(topLevel, topSubStackPop.isEmpty() && stackPop.isEmpty()) == RED)
+                                  topSubStackPop: PersistentStack<DequeLevel>,
+                                  stackPop: DequeSubStack?): DequeSubStack? {
+        assert(levelColor(topLevel, topSubStackPop.isEmpty() && stackPop == null) == RED)
 
         val nextLevel = topLevel(topSubStackPop, stackPop)
 
-        val newStack = if (nextLevel == null) {
+        val newTopSubStack = if (nextLevel == null) {
             if (topLevel.lhs is EmptyBuffer && topLevel.rhs is EmptyBuffer) {
-                return emptyStack()
+                return null
             }
 
-            makeGreenTopLevel(topLevel, emptyLevel, emptyStack(), emptyStack())
+            makeGreenTopLevel(topLevel, emptyLevel, emptyStack(), null)
         } else {
             val subStack = topSubStackByRemovingTopLevel(topSubStackPop, stackPop)
             val stack = stackPopByRemovingTopLevel(topSubStackPop, stackPop)
@@ -229,23 +225,23 @@ class PersistentDeque<T> private constructor(
             makeGreenTopLevel(topLevel, nextLevel, subStack, stack)
         }
 
-        checkInvariants(newStack)
+        checkInvariants(newTopSubStack)
 
-        return newStack
+        return newTopSubStack
     }
 
     private fun makeGreenTopLevel(topLevel: DequeLevel,
                                   nextLevel: DequeLevel,
-                                  subStack: DequeSubStack,
-                                  stack: PersistentStack<DequeSubStack>): PersistentStack<DequeSubStack> {
+                                  subStack: PersistentStack<DequeLevel>,
+                                  stack: DequeSubStack?): DequeSubStack {
 
         assert(subStack.isEmpty()
-                || levelColor(subStack.peek()!!, subStack.pop().isEmpty() && stack.isEmpty()) == YELLOW)
+                || levelColor(subStack.peek()!!, subStack.pop().isEmpty() && stack == null) == YELLOW)
 
-        assert(stack.isEmpty()
-                || levelColor(stack.peek()!!.peek()!!, stack.peek()!!.pop().isEmpty() && stack.pop().isEmpty()) != YELLOW)
+        assert(stack == null
+                || levelColor(stack.stack.peek()!!, stack.stack.pop().isEmpty() && stack.next == null) != YELLOW)
 
-        val isNextLevelBottomLevel = subStack.isEmpty() && stack.isEmpty()
+        val isNextLevelBottomLevel = subStack.isEmpty() && stack == null
 
         val (newTopLevel, newNextLevel) = makeRedLevelGreen(topLevel, nextLevel)
 
@@ -253,17 +249,17 @@ class PersistentDeque<T> private constructor(
 
         if (newNextLevel == null) {
             return if (isNextLevelBottomLevel) {
-                stackOf( stackOf(newTopLevel) )
+                DequeSubStack( stackOf(newTopLevel), null )
             } else {
                 makeBottomLevelsRegular(newTopLevel, emptyLevel, subStack, stack)
             }
         } else {
             // newTopLevel is GREEN
             return if (levelColor(newNextLevel, isNextLevelBottomLevel) == YELLOW) {
-                stack.push( subStack.push(newNextLevel).push(newTopLevel) )
+                DequeSubStack( subStack.push(newNextLevel).push(newTopLevel), stack )
             } else if (isNextLevelBottomLevel || levelColor(newNextLevel, isBottomLevel = false) == GREEN) {
-                stack.push( subStack.push(newNextLevel) )
-                        .push( stackOf(newTopLevel) )
+                DequeSubStack(stackOf(newTopLevel),
+                        DequeSubStack(subStack.push(newNextLevel), stack))
             } else {
                 assert(levelColor(newNextLevel, isBottomLevel = false) == RED)
                 makeBottomLevelsRegular(newTopLevel, newNextLevel, subStack, stack)
@@ -273,28 +269,33 @@ class PersistentDeque<T> private constructor(
 
     private fun makeBottomLevelsRegular(newTopLevel: DequeLevel,
                                         newNextLevel: DequeLevel,
-                                        topSubStackPopPop: DequeSubStack,
-                                        stackPop: PersistentStack<DequeSubStack>): PersistentStack<DequeSubStack> {
+                                        topSubStackPopPop: PersistentStack<DequeLevel>,
+                                        stackPop: DequeSubStack?): DequeSubStack {
+
+        assert(newNextLevel.color == RED
+                && (!topSubStackPopPop.isEmpty() || stackPop != null && !stackPop.stack.isEmpty()))
 
         val nNLevel = topLevel(topSubStackPopPop, stackPop)!!
-        val nNNLevel = topLevel(topSubStackByRemovingTopLevel(topSubStackPopPop, stackPop),
-                stackPopByRemovingTopLevel(topSubStackPopPop, stackPop))
+        val isNNLevelBottomLevel = hasOnlyOneLevel(topSubStackPopPop, stackPop)
 
-        return if (nNNLevel == null) {
-            val (greenNextLevel, newNNLevel)= makeRedLevelGreen(newNextLevel, nNLevel)
+        return if (isNNLevelBottomLevel) {
+            assert(nNLevel.lhs !is EmptyBuffer || nNLevel.rhs !is EmptyBuffer)
+
+            val (greenNextLevel, newNNLevel) = makeRedLevelGreen(newNextLevel, nNLevel)
             if (newNNLevel == null) {
                 if (bottomLevelColor(greenNextLevel) == YELLOW) {
-                    stackOf( stackOf(greenNextLevel).push(newTopLevel) )
+                    DequeSubStack(stackOf(greenNextLevel).push(newTopLevel), null)
                 } else {
-                    stackOf( stackOf(greenNextLevel) ).push( stackOf(newTopLevel) )
+                    DequeSubStack(stackOf(newTopLevel),
+                            DequeSubStack(stackOf(greenNextLevel), null))
                 }
             } else {
-                stackPop.push(topSubStackPopPop.push(newNextLevel))
-                        .push(stackOf(newTopLevel))
+                DequeSubStack(stackOf(newTopLevel),
+                        DequeSubStack(topSubStackPopPop.push(newNextLevel), stackPop))
             }
         } else {
-            stackPop.push(topSubStackPopPop.push(newNextLevel))
-                    .push(stackOf(newTopLevel))
+            DequeSubStack(stackOf(newTopLevel),
+                    DequeSubStack(topSubStackPopPop.push(newNextLevel), stackPop))
         }
     }
 
@@ -404,33 +405,38 @@ class PersistentDeque<T> private constructor(
         return level.color
     }
 
-    private fun topLevel(topSubStack: DequeSubStack,
-                         stackPop: PersistentStack<DequeSubStack>): DequeLevel? {
-        if (topSubStack.isEmpty()) return stackPop.peek()?.peek()
-        return topSubStack.peek()
+    private fun topLevel(topSubStack: PersistentStack<DequeLevel>,
+                         stackPop: DequeSubStack?): DequeLevel? {
+        return if (topSubStack.isEmpty()) stackPop?.stack?.peek() else topSubStack.peek()
     }
 
-    private fun topSubStackByRemovingTopLevel(topSubStack: DequeSubStack,
-                                              stackPop: PersistentStack<DequeSubStack>): DequeSubStack {
-        if (topSubStack.isEmpty()) return stackPop.peek()!!.pop()
-        return topSubStack.pop()
+    private fun topSubStackByRemovingTopLevel(topSubStack: PersistentStack<DequeLevel>,
+                                              stackPop: DequeSubStack?): PersistentStack<DequeLevel> {
+        return if (topSubStack.isEmpty()) stackPop!!.stack.pop() else topSubStack.pop()
     }
 
-    private fun stackPopByRemovingTopLevel(topSubStack: DequeSubStack,
-                                           stackPop: PersistentStack<DequeSubStack>): PersistentStack<DequeSubStack> {
-        if (topSubStack.isEmpty()) return stackPop.pop()
-        return stackPop
+    private fun stackPopByRemovingTopLevel(topSubStack: PersistentStack<DequeLevel>,
+                                           stackPop: DequeSubStack?): DequeSubStack? {
+        return if (topSubStack.isEmpty()) stackPop!!.next else stackPop
     }
 
-    private fun checkInvariants(stack: PersistentStack<DequeSubStack>) {
+    private fun hasOnlyOneLevel(topSubStack: DequeSubStack): Boolean {
+        return topSubStack.next == null && topSubStack.stack.pop().isEmpty()
+    }
+
+    private fun hasOnlyOneLevel(topSubStack: PersistentStack<DequeLevel>, stackPop: DequeSubStack?): Boolean {
+        return if (topSubStack.isEmpty()) stackPop!!.stack.pop().isEmpty() else topSubStack.pop().isEmpty() && stackPop == null
+    }
+
+    private fun checkInvariants(stack: DequeSubStack?) {
         var result = stack
         var isCurrentLevelTopLevel = true
 
-        while (!result.isEmpty() && !result.pop().isEmpty()) {
-            val currentLevel = result.peek()!!.peek()!!
+        while (result != null && result.next != null) {
+            val currentLevel = result.stack.peek()!!
 
-            val isNextTopLevelBottomLevel = result.pop().pop().isEmpty() && result.pop().peek()!!.pop().isEmpty()
-            val nextTopLevel = result.pop().peek()!!.peek()!!
+            val isNextTopLevelBottomLevel = result.next!!.next == null && result.next!!.stack.pop().isEmpty()
+            val nextTopLevel = result.next!!.stack.peek()!!
 
             if (isCurrentLevelTopLevel && currentLevel.color == RED) {
                 throw IllegalStateException()
@@ -455,13 +461,13 @@ class PersistentDeque<T> private constructor(
             }
 
             isCurrentLevelTopLevel = false
-            result = result.pop()
+            result = result.next
         }
     }
 
 
     companion object InstanceHolder {
-        val emptyDeque = PersistentDeque<Any>(emptyStack())
+        val emptyDeque = PersistentDeque<Any>(null)
     }
 }
 
