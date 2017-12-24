@@ -1,9 +1,6 @@
 package persistentDeque
 
 import buffer.*
-import persistentStack.PersistentStack
-import persistentStack.emptyStack
-import persistentStack.stackOf
 
 private const val RED_RED = 0
 private const val RED_YELLOW = 1
@@ -25,7 +22,7 @@ internal data class DequeLevel(val lhs: Buffer, val rhs: Buffer) {
 
 private val emptyLevel = DequeLevel(EmptyBuffer, EmptyBuffer)
 
-internal data class DequeSubStack(val stack: PersistentStack<DequeLevel>, val next: DequeSubStack?)
+internal data class DequeSubStack(val stack: LevelStack, val next: DequeSubStack?)
 
 class PersistentDeque<T> private constructor(
         private val topSubStack: DequeSubStack?
@@ -63,30 +60,30 @@ class PersistentDeque<T> private constructor(
 
     val first: T?
         get() {
-            val topLevel = topSubStack?.stack?.peek() ?: return null
+            val topLevel = topSubStack?.stack?.value ?: return null
             return (if (topLevel.lhs is EmptyBuffer) topLevel.rhs.first else topLevel.lhs.first) as T
         }
 
     val last: T?
         get() {
-            val topLevel = topSubStack?.stack?.peek() ?: return null
+            val topLevel = topSubStack?.stack?.value ?: return null
             return (if (topLevel.rhs is EmptyBuffer) topLevel.lhs.last else topLevel.rhs.last) as T
         }
 
     fun addFirst(value: T): PersistentDeque<T> {
         if (topSubStack == null) {
             val level = DequeLevel(BufferOfOne(value as Any), EmptyBuffer)
-            return PersistentDeque(DequeSubStack(stackOf(level), null))
+            return PersistentDeque(DequeSubStack(LevelStack(level, null), null))
         }
 
-        val topLevel = topSubStack.stack.peek()!!
+        val topLevel = topSubStack.stack.value
         val newTopLevel = DequeLevel(topLevel.lhs.addFirst(value as Any), topLevel.rhs)
 
         return makeDequeRegular(newTopLevel)
     }
 
     fun removeFirst(): PersistentDeque<T> {
-        val topLevel = topSubStack?.stack?.peek() ?: throw NoSuchElementException()
+        val topLevel = topSubStack?.stack?.value ?: throw NoSuchElementException()
 
         val newTopLevel = if (topLevel.lhs is EmptyBuffer) {
             DequeLevel(topLevel.lhs, topLevel.rhs.removeFirst())
@@ -100,17 +97,17 @@ class PersistentDeque<T> private constructor(
     fun addLast(value: T): PersistentDeque<T> {
         if (topSubStack == null) {
             val level = DequeLevel(EmptyBuffer, BufferOfOne(value as Any))
-            return PersistentDeque(DequeSubStack(stackOf(level), null))
+            return PersistentDeque(DequeSubStack(LevelStack(level, null), null))
         }
 
-        val topLevel = topSubStack.stack.peek()!!
+        val topLevel = topSubStack.stack.value
         val newTopLevel = DequeLevel(topLevel.lhs, topLevel.rhs.addLast(value as Any))
 
         return makeDequeRegular(newTopLevel)
     }
 
     fun removeLast(): PersistentDeque<T> {
-        val topLevel = topSubStack?.stack?.peek() ?: throw NoSuchElementException()
+        val topLevel = topSubStack?.stack?.value ?: throw NoSuchElementException()
 
         val newTopLevel = if (topLevel.rhs is EmptyBuffer) {
             DequeLevel(topLevel.lhs.removeLast(), topLevel.rhs)
@@ -310,7 +307,7 @@ class PersistentDeque<T> private constructor(
             GREEN_YELLOW -> {
                 levelIterator.add(newTopLevel)
                 if (!isTopLevelOnlyLevel) {
-                    val topSubStack = levelIterator.stack
+                    val topSubStack = levelIterator.stack!!
 
                     levelIterator.skipStack()
                     makeGreenNextSubStackTop(levelIterator)
