@@ -137,6 +137,167 @@ class PersistentDeque<T> private constructor(
         return list
     }
 
+    fun get(index: Int): T {
+        if (index < 0 || index >= this.size) throw IndexOutOfBoundsException()
+
+        var lIndex = index
+        var rIndex = this.size - index - 1
+
+        var topSubStack = this.topSubStack!!.stack
+        var stackPop = this.topSubStack.next
+        var topLevel = topLevel(topSubStack, stackPop)
+
+        var depth = 0
+
+        while (topLevel != null) {
+            if (lIndex < topLevel.lhs.size shl depth) {
+                var lhs = topLevel.lhs
+                while (lIndex >= 1 shl depth) {
+                    lIndex -= 1 shl depth
+                    lhs = lhs.removeFirst()
+                }
+                return get(lIndex, lhs.first, depth)
+            }
+            if (rIndex < topLevel.rhs.size shl depth) {
+                var rhs = topLevel.rhs
+                while (rIndex >= 1 shl depth) {
+                    rIndex -= 1 shl depth
+                    rhs = rhs.removeLast()
+                }
+                return get((1 shl depth) - rIndex - 1, rhs.last, depth)
+            }
+
+            lIndex -= topLevel.lhs.size shl depth
+            rIndex -= topLevel.rhs.size shl depth
+
+            depth += 1
+
+            val oldTopSubStack = topSubStack
+            topSubStack = topSubStackByRemovingTopLevel(oldTopSubStack, stackPop)
+            stackPop = stackPopByRemovingTopLevel(oldTopSubStack, stackPop)
+            topLevel = topLevel(topSubStack, stackPop)
+        }
+
+        throw AssertionError("Unreachable")
+    }
+
+    fun set(index: Int, value: T): PersistentDeque<T> {
+        if (index < 0 || index >= this.size) throw IndexOutOfBoundsException()
+
+        var lIndex = index
+        var rIndex = this.size - index - 1
+
+        var topSubStack = this.topSubStack!!.stack
+        var stackPop = this.topSubStack.next
+        var topLevel = topLevel(topSubStack, stackPop)
+        val levelCollector = mutableListOf<DequeLevel>()
+
+        var depth = 0
+
+        while (topLevel != null) {
+            if (lIndex < topLevel.lhs.size shl depth) {
+                var lhs = topLevel.lhs
+                val precedingValues = mutableListOf<Any>()
+
+                while (lIndex >= 1 shl depth) {
+                    precedingValues.add(lhs.first)
+                    lhs = lhs.removeFirst()
+                    lIndex -= 1 shl depth
+                }
+
+                val newFirst = set(lIndex, value, lhs.first, depth)
+                lhs = lhs.removeFirst().addFirst(newFirst)
+
+                var precedingIndex = precedingValues.size - 1
+                while (precedingIndex >= 0) {
+                    lhs = lhs.addFirst(precedingValues[precedingIndex--])
+                }
+
+                levelCollector.add(DequeLevel(lhs, topLevel.rhs))
+                break
+            }
+            if (rIndex < topLevel.rhs.size shl depth) {
+                var rhs = topLevel.rhs
+                val succeedingValues = mutableListOf<Any>()
+
+                while (rIndex >= 1 shl depth) {
+                    succeedingValues.add(rhs.last)
+                    rhs = rhs.removeLast()
+                    rIndex -= 1 shl depth
+                }
+
+                val newLast = set((1 shl depth) - rIndex - 1, value, rhs.last, depth)
+                rhs = rhs.removeLast().addLast(newLast)
+
+                var succeedingIndex = succeedingValues.size - 1
+                while (succeedingIndex >= 0) {
+                    rhs = rhs.addLast(succeedingValues[succeedingIndex--])
+                }
+
+                levelCollector.add(DequeLevel(topLevel.lhs, rhs))
+                break
+            }
+
+            lIndex -= topLevel.lhs.size shl depth
+            rIndex -= topLevel.rhs.size shl depth
+
+            depth += 1
+            levelCollector.add(topLevel)
+
+            val oldTopSubStack = topSubStack
+            topSubStack = topSubStackByRemovingTopLevel(oldTopSubStack, stackPop)
+            stackPop = stackPopByRemovingTopLevel(oldTopSubStack, stackPop)
+            topLevel = topLevel(topSubStack, stackPop)
+        }
+
+        val oldTopSubStack = topSubStack
+        topSubStack = topSubStackByRemovingTopLevel(oldTopSubStack, stackPop)
+        stackPop = stackPopByRemovingTopLevel(oldTopSubStack, stackPop)
+
+        var levelIndex = levelCollector.size - 1
+        while (levelIndex >= 0) {
+            if (topSubStack.isEmpty() || levelColor(topSubStack.peek()!!, hasOnlyOneLevel(topSubStack, stackPop)) == YELLOW) {
+                topSubStack = topSubStack.push(levelCollector[levelIndex])
+            } else {
+                stackPop = DequeSubStack(topSubStack, stackPop)
+                topSubStack = stackOf(levelCollector[levelIndex])
+            }
+            levelIndex -= 1
+        }
+
+        if (topSubStack.isEmpty()) {
+            return PersistentDeque(stackPop)
+        }
+        return PersistentDeque(DequeSubStack(topSubStack, stackPop))
+    }
+
+    private fun get(index: Int, node: Any, depth: Int): T {
+        if (depth == 0) {
+            return node as T
+        }
+        val pair = node as Pair<Any, Any>
+        val lSize = 1 shl (depth - 1)
+
+        if (index < lSize) {
+            return get(index, pair.first, depth - 1)
+        }
+        return get(index - lSize, pair.second, depth - 1)
+    }
+
+    private fun set(index: Int, value: T, node: Any, depth: Int): Any {
+        if (depth == 0) {
+            return value as Any
+        }
+        val pair = node as Pair<Any, Any>
+        val lSize = 1 shl (depth - 1)
+
+        if (index < lSize) {
+            val newFirst = set(index, value, pair.first, depth - 1)
+            return Pair(newFirst, pair.second)
+        }
+        val newSecond = set(index - lSize, value, pair.second, depth - 1)
+        return Pair(pair.first, newSecond)
+    }
 
     private fun fillListFromStack(topSubStack: PersistentStack<DequeLevel>,
                                   stackPop: DequeSubStack?,

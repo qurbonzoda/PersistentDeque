@@ -225,6 +225,66 @@ class PersistentDequeTest {
     }
 
     @Test
+    fun getTests() {
+        var deque = emptyDeque<Int>()
+
+        assertThrows(IndexOutOfBoundsException::class.java) {
+            deque.get(0)
+        }
+        assertEquals(1, deque.addLast(1).get(0))
+        assertEquals(1, deque.addFirst(1).get(0))
+
+        val elementsToAdd = 100
+        repeat(times = elementsToAdd) { index ->
+            deque = deque.addLast(index)
+
+            for (i in 0..index) {
+                assertEquals(i, deque.get(i))
+            }
+        }
+        repeat(times = elementsToAdd) { index ->
+            for (i in index until elementsToAdd) {
+                assertEquals(i, deque.get(i - index))
+            }
+
+            deque = deque.removeFirst()
+        }
+    }
+
+    @Test
+    fun setTests() {
+        var deque = emptyDeque<Int>()
+
+        assertThrows(IndexOutOfBoundsException::class.java) {
+            deque.set(0, 0)
+        }
+        assertEquals(2, deque.addLast(1).set(0, 2).get(0))
+        assertEquals(2, deque.addFirst(1).set(0, 2).get(0))
+
+        val elementsToAdd = 100
+        repeat(times = elementsToAdd) { index ->
+            deque = deque.addLast(index * 2)
+
+            for (i in 0..index) {
+                assertEquals(i + index, deque.get(i))
+                deque = deque.set(i, i + index + 1)
+                assertEquals(i + index + 1, deque.get(i))
+            }
+        }
+        repeat(times = elementsToAdd) { index ->
+            for (i in 0..(elementsToAdd - index - 1)) {
+                val expected = elementsToAdd + i
+
+                assertEquals(expected, deque.get(i))
+                deque = deque.set(i, expected - 1)
+                assertEquals(expected - 1, deque.get(i))
+            }
+
+            deque = deque.removeFirst()
+        }
+    }
+
+    @Test
     fun randomOperationsTests() {
         val random = Random()
         val lists = mutableListOf(emptyList<Int>())
