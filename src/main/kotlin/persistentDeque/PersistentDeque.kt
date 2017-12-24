@@ -265,10 +265,15 @@ class PersistentDeque<T> private constructor(
             levelIndex -= 1
         }
 
-        if (topSubStack.isEmpty()) {
-            return PersistentDeque(stackPop)
+        val newSubStack = if (topSubStack.isEmpty()) {
+            stackPop
+        } else {
+            DequeSubStack(topSubStack, stackPop)
         }
-        return PersistentDeque(DequeSubStack(topSubStack, stackPop))
+
+        checkInvariants(newSubStack)
+
+        return PersistentDeque(newSubStack)
     }
 
     private fun get(index: Int, node: Any, depth: Int): T {
