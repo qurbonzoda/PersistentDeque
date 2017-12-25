@@ -2,13 +2,9 @@ package persistentDeque
 
 import buffer.*
 
-private const val RED_RED = 0
-private const val RED_YELLOW = 1
-private const val RED_GREEN = 2
 private const val YELLOW_RED = 3
 private const val YELLOW_YELLOW = 4
 private const val YELLOW_GREEN = 5
-private const val GREEN_RED = 6
 private const val GREEN_YELLOW = 7
 private const val GREEN_GREEN = 8
 
@@ -22,17 +18,20 @@ internal data class DequeLevel(val lhs: Buffer, val rhs: Buffer) {
 
 private val emptyLevel = DequeLevel(EmptyBuffer, EmptyBuffer)
 
+internal data class LevelStack(val value: DequeLevel, val next: LevelStack?)
+
 internal data class DequeSubStack(val stack: LevelStack, val next: DequeSubStack?)
 
-class PersistentDeque<T> private constructor(
-        private val topSubStack: DequeSubStack?
+class PersistentDeque<T> internal constructor(
+        private val topSubStack: LevelStack?, private val next: DequeSubStack?
 ) {
+    init {
+        assert(topSubStack != null || next == null)
+    }
 
 //    fun contains(element: T): Boolean
 //    fun containsAll(elements: Collection<T>): Boolean
 
-//    fun get(index: Int): T
-//    fun set(index: Int, element: E)
 //    fun indexOf(element: T): Int
 //    fun lastIndexOf(element: T): Int
 
@@ -41,12 +40,16 @@ class PersistentDeque<T> private constructor(
 //    fun listIterator(index: Int): ListIterator<T>
 
     fun isEmpty(): Boolean {
-        return topSubStack == null
+        return isEmpty(this.topSubStack, this.next)
+    }
+
+    private fun isEmpty(topSubStack: LevelStack?, next: DequeSubStack?): Boolean {
+        return topSubStack == null && next == null
     }
 
     val size: Int
         get() {
-            val levelIterator = LevelIterator(this.topSubStack)
+            val levelIterator = LevelIterator(this.topSubStack, this.next)
             var size = 0
             var depth = 0
 
@@ -60,30 +63,30 @@ class PersistentDeque<T> private constructor(
 
     val first: T?
         get() {
-            val topLevel = topSubStack?.stack?.value ?: return null
+            val topLevel = this.topSubStack?.value ?: return null
             return (if (topLevel.lhs is EmptyBuffer) topLevel.rhs.first else topLevel.lhs.first) as T
         }
 
     val last: T?
         get() {
-            val topLevel = topSubStack?.stack?.value ?: return null
+            val topLevel = this.topSubStack?.value ?: return null
             return (if (topLevel.rhs is EmptyBuffer) topLevel.lhs.last else topLevel.rhs.last) as T
         }
 
     fun addFirst(value: T): PersistentDeque<T> {
-        if (topSubStack == null) {
+        if (this.topSubStack == null) {
             val level = DequeLevel(BufferOfOne(value as Any), EmptyBuffer)
-            return PersistentDeque(DequeSubStack(LevelStack(level, null), null))
+            return PersistentDeque(LevelStack(level, null), null)
         }
 
-        val topLevel = topSubStack.stack.value
+        val topLevel = this.topSubStack.value
         val newTopLevel = DequeLevel(topLevel.lhs.addFirst(value as Any), topLevel.rhs)
 
-        return makeDequeRegular(newTopLevel)
+        return makeDequeRegular(topLevel, newTopLevel)
     }
 
     fun removeFirst(): PersistentDeque<T> {
-        val topLevel = topSubStack?.stack?.value ?: throw NoSuchElementException()
+        val topLevel = this.topSubStack?.value ?: throw NoSuchElementException()
 
         val newTopLevel = if (topLevel.lhs is EmptyBuffer) {
             DequeLevel(topLevel.lhs, topLevel.rhs.removeFirst())
@@ -91,23 +94,23 @@ class PersistentDeque<T> private constructor(
             DequeLevel(topLevel.lhs.removeFirst(), topLevel.rhs)
         }
 
-        return makeDequeRegular(newTopLevel)
+        return makeDequeRegular(topLevel, newTopLevel)
     }
 
     fun addLast(value: T): PersistentDeque<T> {
-        if (topSubStack == null) {
+        if (this.topSubStack == null) {
             val level = DequeLevel(EmptyBuffer, BufferOfOne(value as Any))
-            return PersistentDeque(DequeSubStack(LevelStack(level, null), null))
+            return PersistentDeque(LevelStack(level, null), null)
         }
 
-        val topLevel = topSubStack.stack.value
+        val topLevel = this.topSubStack.value
         val newTopLevel = DequeLevel(topLevel.lhs, topLevel.rhs.addLast(value as Any))
 
-        return makeDequeRegular(newTopLevel)
+        return makeDequeRegular(topLevel, newTopLevel)
     }
 
     fun removeLast(): PersistentDeque<T> {
-        val topLevel = topSubStack?.stack?.value ?: throw NoSuchElementException()
+        val topLevel = this.topSubStack?.value ?: throw NoSuchElementException()
 
         val newTopLevel = if (topLevel.rhs is EmptyBuffer) {
             DequeLevel(topLevel.lhs.removeLast(), topLevel.rhs)
@@ -115,12 +118,12 @@ class PersistentDeque<T> private constructor(
             DequeLevel(topLevel.lhs, topLevel.rhs.removeLast())
         }
 
-        return makeDequeRegular(newTopLevel)
+        return makeDequeRegular(topLevel, newTopLevel)
     }
 
     fun toList(): List<T> {
         val list = mutableListOf<T>()
-        fillListFromStack(LevelIterator(this.topSubStack), 0, list)
+        fillListFromStack(LevelIterator(this.topSubStack, this.next), 0, list)
         return list
     }
 
@@ -130,7 +133,7 @@ class PersistentDeque<T> private constructor(
         var lIndex = index
         var rIndex = this.size - index - 1
 
-        val levelIterator = LevelIterator(this.topSubStack)
+        val levelIterator = LevelIterator(this.topSubStack, this.next)
 
         var depth = 0
 
@@ -167,7 +170,7 @@ class PersistentDeque<T> private constructor(
         var lIndex = index
         var rIndex = this.size - index - 1
 
-        val levelIterator = LevelIterator(this.topSubStack)
+        val levelIterator = LevelIterator(this.topSubStack, this.next)
         val levelCollector = mutableListOf<DequeLevel>()
 
         var depth = 0
@@ -229,7 +232,7 @@ class PersistentDeque<T> private constructor(
             levelIterator.add(levelCollector[levelIndex--])
         }
 
-        return PersistentDeque(levelIterator.createDequeSubStack())
+        return levelIterator.createPersistentDeque()
     }
 
     private fun get(index: Int, node: Any, depth: Int): T {
@@ -293,47 +296,34 @@ class PersistentDeque<T> private constructor(
         }
     }
 
-    private fun makeDequeRegular(newTopLevel: DequeLevel): PersistentDeque<T> {
-        val levelIterator = LevelIterator(this.topSubStack)
-        val topLevel = levelIterator.next()
+    private fun makeDequeRegular(topLevel: DequeLevel, newTopLevel: DequeLevel): PersistentDeque<T> {
+        val topSubStackNext = this.topSubStack!!.next
+        val next = this.next
 
-        val isTopLevelOnlyLevel = !levelIterator.hasNext()
+        val isTopLevelOnlyLevel = isEmpty(topSubStackNext, next)
 
-        when(colorChange(topLevel, newTopLevel, isTopLevelOnlyLevel)) {
+        return when(colorChange(topLevel, newTopLevel, isTopLevelOnlyLevel)) {
             GREEN_GREEN,
             YELLOW_GREEN,
-            YELLOW_YELLOW -> levelIterator.add(newTopLevel)
+            YELLOW_YELLOW -> PersistentDeque(LevelStack(newTopLevel, topSubStackNext), next)
 
             GREEN_YELLOW -> {
-                levelIterator.add(newTopLevel)
-                if (!isTopLevelOnlyLevel) {
-                    val topSubStack = levelIterator.stack!!
-
-                    levelIterator.skipStack()
-                    makeGreenNextSubStackTop(levelIterator)
-
-                    levelIterator.addStack(topSubStack)
+                if (isTopLevelOnlyLevel || next == null
+                        || levelColor(next.stack.value, isEmpty(next.stack.next, next.next)) == GREEN) {
+                    PersistentDeque(LevelStack(newTopLevel, topSubStackNext), next)
+                } else {
+                    val levelIterator = LevelIterator(next.stack, next.next)
+                    makeGreenTopLevel(levelIterator.next(), levelIterator)
+                    levelIterator.addStack(LevelStack(newTopLevel, topSubStackNext))
+                    levelIterator.createPersistentDeque()
                 }
             }
 
-            YELLOW_RED -> makeGreenTopLevel(newTopLevel, levelIterator)
-
-            else -> throw IllegalStateException()
-        }
-
-        return PersistentDeque(levelIterator.createDequeSubStack())
-    }
-
-    private fun makeGreenNextSubStackTop(levelIterator: LevelIterator) {
-        if (!levelIterator.hasNext()) {
-            return
-        }
-        val nextSubStackTop = levelIterator.next()
-
-        when (levelColor(nextSubStackTop, !levelIterator.hasNext())) {
-            GREEN -> levelIterator.add(nextSubStackTop)
-
-            RED -> makeGreenTopLevel(nextSubStackTop, levelIterator)
+            YELLOW_RED -> {
+                val levelIterator = LevelIterator(topSubStackNext, next)
+                makeGreenTopLevel(newTopLevel, levelIterator)
+                levelIterator.createPersistentDeque()
+            }
 
             else -> throw IllegalStateException()
         }
@@ -514,7 +504,7 @@ class PersistentDeque<T> private constructor(
 
 
     companion object InstanceHolder {
-        val emptyDeque = PersistentDeque<Any>(null)
+        val emptyDeque = PersistentDeque<Any>(null, null)
     }
 }
 

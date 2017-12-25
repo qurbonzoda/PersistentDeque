@@ -5,62 +5,54 @@ import buffer.GREEN
 import buffer.RED
 import buffer.YELLOW
 
-internal data class LevelStack(val value: DequeLevel, val next: LevelStack?)
-
-internal class LevelIterator(private var subStack: DequeSubStack?) {
-    var stack: LevelStack? = null
+internal class LevelIterator(private var topSubStack: LevelStack?, private var next: DequeSubStack?) {
 
     fun hasNext(): Boolean {
-        return stack != null || subStack != null
+        return topSubStack != null || next != null
     }
 
     fun next(): DequeLevel {
-        if (stack == null) {
-            stack = subStack!!.stack
-            subStack = subStack!!.next
+        if (topSubStack == null) {
+            topSubStack = next!!.stack
+            next = next!!.next
         }
 
-        val result = stack!!.value
-        stack = stack!!.next
+        val result = topSubStack!!.value
+        topSubStack = topSubStack!!.next
         return result
     }
 
-    fun skipStack() {
-        stack = null
-    }
-
     fun add(level: DequeLevel) {
-        if (stack == null || levelColor(stack!!.value, hasOnlyOneLevel()) == YELLOW) {
-            stack = LevelStack(level, stack)
+        if (topSubStack == null || levelColor(topSubStack!!.value, hasOnlyOneLevel()) == YELLOW) {
+            topSubStack = LevelStack(level, topSubStack)
         } else {
-            subStack = DequeSubStack(stack!!, subStack)
-            stack = LevelStack(level, null)
+            next = DequeSubStack(topSubStack!!, next)
+            topSubStack = LevelStack(level, null)
         }
     }
 
     fun addStack(stack: LevelStack) {
-        if (this.stack != null) {
-            assert(levelColor(this.stack!!.value, isBottomLevel = false) != YELLOW)
-            subStack = DequeSubStack(this.stack!!, subStack)
+        if (this.topSubStack != null) {
+            assert(levelColor(this.topSubStack!!.value, hasOnlyOneLevel()) != YELLOW)
+            next = DequeSubStack(this.topSubStack!!, next)
         }
-        this.stack = stack
+        this.topSubStack = stack
     }
 
-    fun createDequeSubStack(): DequeSubStack? {
-        val dequeSubStack = if (stack == null) {
-            subStack
+    fun <T> createPersistentDeque(): PersistentDeque<T> {
+        checkInvariants()
+        return if (topSubStack == null) {
+            PersistentDeque(next?.stack, next?.next)
         } else {
-            DequeSubStack(stack!!, subStack)
+            PersistentDeque(topSubStack, next)
         }
-        checkInvariants(dequeSubStack)
-        return dequeSubStack
     }
 
     fun hasOnlyOneLevel(): Boolean {
-        if (stack == null) {
-            return subStack != null && subStack!!.next == null && subStack!!.stack.next == null
+        if (topSubStack == null) {
+            return next != null && next!!.next == null && next!!.stack.next == null
         }
-        return stack!!.next == null && subStack == null
+        return topSubStack!!.next == null && next == null
     }
 
     private fun levelColor(level: DequeLevel, isBottomLevel: Boolean): Int {
@@ -73,15 +65,21 @@ internal class LevelIterator(private var subStack: DequeSubStack?) {
         return level.color
     }
 
-    private fun checkInvariants(stack: DequeSubStack?) {
-        var result = stack
+    private fun checkInvariants() {
+        var topSubStack = this.topSubStack
+        var next = this.next
+        if (topSubStack == null) {
+            topSubStack = next?.stack
+            next = next?.next
+        }
+
         var isCurrentLevelTopLevel = true
 
-        while (result != null && result.next != null) {
-            val currentLevel = result.stack.value
+        while (topSubStack != null && next != null) {
+            val currentLevel = topSubStack.value
 
-            val isNextTopLevelBottomLevel = result.next!!.next == null && result.next!!.stack.next == null
-            val nextTopLevel = result.next!!.stack.value
+            val isNextTopLevelBottomLevel = next.next == null && next.stack.next == null
+            val nextTopLevel = next.stack.value
 
             if (isCurrentLevelTopLevel && currentLevel.color == RED) {
                 throw IllegalStateException()
@@ -106,7 +104,8 @@ internal class LevelIterator(private var subStack: DequeSubStack?) {
             }
 
             isCurrentLevelTopLevel = false
-            result = result.next
+            topSubStack = next.stack
+            next = next.next
         }
     }
 }
