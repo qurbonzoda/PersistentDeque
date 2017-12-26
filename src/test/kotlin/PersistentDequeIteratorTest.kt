@@ -40,15 +40,15 @@ class PersistentDequeIteratorTest: BaseIteratorTest() {
     fun previousTests() {
         testPrevious(createPersistentDeque(0))
         testPrevious(createPersistentDeque(4))
-        testPrevious(createPersistentDeque(5))
+        testPrevious(createPersistentDeque(15))
         testPrevious(createPersistentDeque(100))
-        testPrevious(createPersistentDeque(1000))
-        testPrevious(createPersistentDeque(10000))
+        testPrevious(createPersistentDeque(255))
+        testPrevious(createPersistentDeque(400))
     }
 
     private fun testPrevious(deque: PersistentDeque<Int>) {
         val list = deque.toList()
-        baseTestNext(list, { index ->
+        baseTestPrevious(list, { index ->
             deque.listIterator(index)
         })
     }

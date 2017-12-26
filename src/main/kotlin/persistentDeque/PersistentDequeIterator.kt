@@ -7,9 +7,13 @@ internal class PersistentDequeIterator<T>(
         levelIterator: LevelIterator, private var index: Int, private val size: Int
 ): ListIterator<T> {
     private val buffersIterator: ListIterator<Buffer>
+    private var isBufferIteratorResultOfNext: Boolean = false
+
     private val buffersCount: Int
 
     private var bufferIterator: BufferIterator? = null
+    private var isTreeIteratorResultOfNext: Boolean = false
+
     private var treeIterator: PerfectBinaryTreeIterator<T>? = null
 
     init {
@@ -32,11 +36,13 @@ internal class PersistentDequeIterator<T>(
         var lIndex = index
 
         while (buffersIterator.hasNext()) {
+            val indexOfBuffer = buffersIterator.nextIndex()
             val buffer = buffersIterator.next()
-            val depth = depthOfCurrentBuffer()
+            val depth = minOf(indexOfBuffer, buffersCount - indexOfBuffer - 1)
 
             if (lIndex < buffer.size shl depth) {
                 setIterators(buffer, lIndex, depth)
+                isBufferIteratorResultOfNext = true
                 break
             }
 
@@ -60,13 +66,20 @@ internal class PersistentDequeIterator<T>(
         if (treeIterator!!.hasNext()) {
             return treeIterator!!.next()
         }
+
+        bufferIteratorWantsToAccessNext()
+
         if (bufferIterator!!.hasNext()) {
             treeIterator = PerfectBinaryTreeIterator(bufferIterator!!.next(), depthOfCurrentBuffer(), 0)
             return treeIterator!!.next()
         }
 
+        bufferIteratorsWantsToAccessNext()
+
         skipNextEmptyBuffer()
-        setIterators(buffersIterator.next(), 0, depthOfCurrentBuffer())
+
+        val nextBuffer = buffersIterator.next()
+        setIterators(nextBuffer, 0, depthOfCurrentBuffer())
 
         return treeIterator!!.next()
     }
@@ -87,15 +100,20 @@ internal class PersistentDequeIterator<T>(
             return treeIterator!!.previous()
         }
 
-        val depth = depthOfCurrentBuffer()
+        bufferIteratorWantsToAccessPrevious()
 
         if (bufferIterator?.hasPrevious() == true) {
+            val depth = depthOfCurrentBuffer()
             treeIterator = PerfectBinaryTreeIterator(bufferIterator!!.previous(), depth, 1 shl depth)
             return treeIterator!!.previous()
         }
 
+        bufferIteratorsWantsToAccessPrevious()
+
         skipPreviousEmptyBuffer()
-        setIteratorsToLast(buffersIterator.previous(), depth)
+
+        val previousBuffer = buffersIterator.previous()
+        setIteratorsToLast(previousBuffer, depthOfCurrentBuffer())
 
         return treeIterator!!.previous()
     }
@@ -105,7 +123,7 @@ internal class PersistentDequeIterator<T>(
     }
 
     private fun depthOfCurrentBuffer(): Int {
-        val indexOfBuffer = buffersIterator.nextIndex() - 1
+        val indexOfBuffer = if (isBufferIteratorResultOfNext) buffersIterator.previousIndex() else buffersIterator.nextIndex()
         return minOf(indexOfBuffer, buffersCount - indexOfBuffer - 1)
     }
 
@@ -117,12 +135,42 @@ internal class PersistentDequeIterator<T>(
         val indexInTree = index - (indexInBuffer shl depth)
         bufferIterator = BufferIterator(buffer, indexInBuffer)
         treeIterator = PerfectBinaryTreeIterator(bufferIterator!!.next(), depth, indexInTree)
+        isTreeIteratorResultOfNext = true
     }
 
     private fun setIteratorsToLast(buffer: Buffer, depth: Int) {
         assert(buffer !is  EmptyBuffer)
         bufferIterator = BufferIterator(buffer, buffer.size)
         treeIterator = PerfectBinaryTreeIterator(bufferIterator!!.previous(), depth, 1 shl depth)
+        isTreeIteratorResultOfNext = false
+    }
+
+    private fun bufferIteratorWantsToAccessNext() {
+        if (!isTreeIteratorResultOfNext) {
+            bufferIterator?.next()
+        }
+        isTreeIteratorResultOfNext = true
+    }
+
+    private fun bufferIteratorWantsToAccessPrevious() {
+        if (isTreeIteratorResultOfNext) {
+            bufferIterator?.previous()
+        }
+        isTreeIteratorResultOfNext = false
+    }
+
+    private fun bufferIteratorsWantsToAccessNext() {
+        if (!isBufferIteratorResultOfNext) {
+            buffersIterator.next()
+        }
+        isBufferIteratorResultOfNext = true
+    }
+
+    private fun bufferIteratorsWantsToAccessPrevious() {
+        if (isBufferIteratorResultOfNext) {
+            buffersIterator.previous()
+        }
+        isBufferIteratorResultOfNext = false
     }
 
     private fun skipNextEmptyBuffer() {
