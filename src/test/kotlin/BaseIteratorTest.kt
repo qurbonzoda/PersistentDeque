@@ -33,7 +33,7 @@ open class BaseIteratorTest {
         while (i1.hasNext() && iterationCount < maxIterationCount) {
             assertTrue(i2.hasNext())
             assertEquals(i1.nextIndex(), i2.nextIndex())
-            assertTrue(i1.next() === i2.next())
+            assertEquals(i1.next(), i2.next())
             iterationCount += 1
         }
         assertEquals(i1.hasNext(), i2.hasNext())
@@ -50,7 +50,7 @@ open class BaseIteratorTest {
         while (i1.hasPrevious() && iterationCount < maxIterationCount) {
             assertTrue(i2.hasPrevious())
             assertEquals(i1.previousIndex(), i2.previousIndex())
-            assertTrue(i1.previous() === i2.previous())
+            assertEquals(i1.previous(), i2.previous())
             iterationCount += 1
         }
         assertEquals(i1.hasPrevious(), i2.hasPrevious())
