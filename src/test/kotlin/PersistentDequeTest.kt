@@ -14,7 +14,7 @@ class PersistentDequeTest {
         assertFalse(deque.addFirst("first").isEmpty())
         assertFalse(deque.addLast("last").isEmpty())
 
-        val elementsToAdd = 10
+        val elementsToAdd = 100000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addLast(index.toString())
             assertFalse(deque.isEmpty())
@@ -35,7 +35,7 @@ class PersistentDequeTest {
         assertEquals(1, deque.addFirst(1).size)
         assertEquals(1, deque.addLast(1).size)
 
-        val elementsToAdd = 100
+        val elementsToAdd = 100000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addFirst(index)
             assertEquals(index + 1, deque.size)
@@ -72,7 +72,7 @@ class PersistentDequeTest {
                         .toList()
         )
 
-        val elementsToAdd = 100
+        val elementsToAdd = 1000
         val list = LinkedList<Int>()
         repeat(times = elementsToAdd) { index ->
             val shouldAddFirst = index % 2 == 0
@@ -106,7 +106,7 @@ class PersistentDequeTest {
         assertEquals(1, deque.addFirst(1).first)
         assertEquals(1, deque.addLast(1).first)
 
-        val elementsToAdd = 100
+        val elementsToAdd = 100000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addFirst(index)
             assertEquals(index, deque.first)
@@ -126,7 +126,7 @@ class PersistentDequeTest {
         assertEquals(1, deque.addFirst(1).last)
         assertEquals(1, deque.addLast(1).last)
 
-        val elementsToAdd = 100
+        val elementsToAdd = 100000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addLast(index)
             assertEquals(index, deque.last)
@@ -146,7 +146,7 @@ class PersistentDequeTest {
         assertEquals(1, deque.addFirst(1).first)
         assertEquals(1, deque.addFirst(1).last)
 
-        val elementsToAdd = 100
+        val elementsToAdd = 10000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addFirst(index)
 
@@ -165,7 +165,7 @@ class PersistentDequeTest {
         assertEquals(1, deque.addLast(1).first)
         assertEquals(1, deque.addLast(1).last)
 
-        val elementsToAdd = 100
+        val elementsToAdd = 10000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addLast(index)
 
@@ -186,7 +186,7 @@ class PersistentDequeTest {
         assertTrue(deque.addLast(1).removeFirst().isEmpty())
         assertTrue(deque.addFirst(1).removeFirst().isEmpty())
 
-        val elementsToAdd = 100
+        val elementsToAdd = 10000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addLast(index)
         }
@@ -210,7 +210,7 @@ class PersistentDequeTest {
         assertTrue(deque.addLast(1).removeLast().isEmpty())
         assertTrue(deque.addFirst(1).removeLast().isEmpty())
 
-        val elementsToAdd = 100
+        val elementsToAdd = 1000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addFirst(index)
         }
@@ -234,7 +234,7 @@ class PersistentDequeTest {
         assertEquals(1, deque.addLast(1).get(0))
         assertEquals(1, deque.addFirst(1).get(0))
 
-        val elementsToAdd = 100
+        val elementsToAdd = 1000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addLast(index)
 
@@ -261,7 +261,7 @@ class PersistentDequeTest {
         assertEquals(2, deque.addLast(1).set(0, 2).get(0))
         assertEquals(2, deque.addFirst(1).set(0, 2).get(0))
 
-        val elementsToAdd = 100
+        val elementsToAdd = 1000
         repeat(times = elementsToAdd) { index ->
             deque = deque.addLast(index * 2)
 
