@@ -35,10 +35,6 @@ class PersistentDeque<T> internal constructor(
 //    fun indexOf(element: T): Int
 //    fun lastIndexOf(element: T): Int
 
-//    fun iterator(): Iterator<T>
-//    fun listIterator(): ListIterator<T>
-//    fun listIterator(index: Int): ListIterator<T>
-
     fun isEmpty(): Boolean {
         return isEmpty(this.topSubStack, this.next)
     }
@@ -233,6 +229,19 @@ class PersistentDeque<T> internal constructor(
         }
 
         return levelIterator.createPersistentDeque()
+    }
+
+    fun listIterator(index: Int): ListIterator<T> {
+        val levelIterator = LevelIterator(topSubStack, next)
+        return PersistentDequeIterator(levelIterator, index, size)
+    }
+
+    fun listIterator(): ListIterator<T> {
+        return listIterator(0)
+    }
+
+    fun iterator(): Iterator<T> {
+        return listIterator()
     }
 
     private fun get(index: Int, node: Any, depth: Int): T {
