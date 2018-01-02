@@ -1,6 +1,6 @@
 package persistentDeque
 
-internal class PerfectBinaryTreeIterator<T>(
+internal class PerfectBinaryTreeIterator<out T>(
         root: Any, depth: Int, private var index: Int
 ): ListIterator<T> {
 
