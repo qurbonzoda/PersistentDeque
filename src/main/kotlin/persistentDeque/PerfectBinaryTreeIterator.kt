@@ -9,13 +9,13 @@ internal class PerfectBinaryTreeIterator<out T>(
     private var isInRightEdge: Boolean = index == size
 
     init {
-        assert(depth >= 0 && index in 0..size)
+//        assert(depth >= 0 && index in 0..size)
 
         fillPath(root, depth, if (index == size) index - 1 else index)
     }
 
     private fun fillPath(root: Any, depth: Int, index: Int) {
-        assert(index >= 0 && index < 1 shl depth)
+//        assert(index >= 0 && index < 1 shl depth)
 
         var node = root
         var nodeDepth = depth

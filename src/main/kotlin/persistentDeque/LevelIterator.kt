@@ -33,14 +33,14 @@ internal class LevelIterator(private var topSubStack: LevelStack?, private var n
 
     fun addStack(stack: LevelStack) {
         if (this.topSubStack != null) {
-            assert(levelColor(this.topSubStack!!.value, hasOnlyOneLevel()) != YELLOW)
+//            assert(levelColor(this.topSubStack!!.value, hasOnlyOneLevel()) != YELLOW)
             next = DequeSubStack(this.topSubStack!!, next)
         }
         this.topSubStack = stack
     }
 
     fun <T> createPersistentDeque(): PersistentDeque<T> {
-        checkInvariants()
+//        checkInvariants()
         return if (topSubStack == null) {
             PersistentDeque(next?.stack, next?.next)
         } else {
@@ -65,47 +65,47 @@ internal class LevelIterator(private var topSubStack: LevelStack?, private var n
         return level.color
     }
 
-    private fun checkInvariants() {
-        var topSubStack = this.topSubStack
-        var next = this.next
-        if (topSubStack == null) {
-            topSubStack = next?.stack
-            next = next?.next
-        }
-
-        var isCurrentLevelTopLevel = true
-
-        while (topSubStack != null && next != null) {
-            val currentLevel = topSubStack.value
-
-            val isNextTopLevelBottomLevel = next.next == null && next.stack.next == null
-            val nextTopLevel = next.stack.value
-
-            if (isCurrentLevelTopLevel && currentLevel.color == RED) {
-                throw IllegalStateException()
-            }
-            if (isCurrentLevelTopLevel
-                    && currentLevel.color == YELLOW
-                    && levelColor(nextTopLevel, isNextTopLevelBottomLevel) != GREEN) {
-                throw IllegalStateException()
-            }
-            if (levelColor(nextTopLevel, isNextTopLevelBottomLevel) == YELLOW) {
-                throw IllegalStateException()
-            }
-            if (!isCurrentLevelTopLevel
-                    && currentLevel.color != GREEN
-                    && levelColor(nextTopLevel, isNextTopLevelBottomLevel) != GREEN) {
-                throw IllegalStateException()
-            }
-
-            if (levelColor(nextTopLevel, isNextTopLevelBottomLevel) != GREEN
-                    && levelColor(nextTopLevel, isNextTopLevelBottomLevel) != RED) {
-                throw IllegalStateException()
-            }
-
-            isCurrentLevelTopLevel = false
-            topSubStack = next.stack
-            next = next.next
-        }
-    }
+//    private fun checkInvariants() {
+//        var topSubStack = this.topSubStack
+//        var next = this.next
+//        if (topSubStack == null) {
+//            topSubStack = next?.stack
+//            next = next?.next
+//        }
+//
+//        var isCurrentLevelTopLevel = true
+//
+//        while (topSubStack != null && next != null) {
+//            val currentLevel = topSubStack.value
+//
+//            val isNextTopLevelBottomLevel = next.next == null && next.stack.next == null
+//            val nextTopLevel = next.stack.value
+//
+//            if (isCurrentLevelTopLevel && currentLevel.color == RED) {
+//                throw IllegalStateException()
+//            }
+//            if (isCurrentLevelTopLevel
+//                    && currentLevel.color == YELLOW
+//                    && levelColor(nextTopLevel, isNextTopLevelBottomLevel) != GREEN) {
+//                throw IllegalStateException()
+//            }
+//            if (levelColor(nextTopLevel, isNextTopLevelBottomLevel) == YELLOW) {
+//                throw IllegalStateException()
+//            }
+//            if (!isCurrentLevelTopLevel
+//                    && currentLevel.color != GREEN
+//                    && levelColor(nextTopLevel, isNextTopLevelBottomLevel) != GREEN) {
+//                throw IllegalStateException()
+//            }
+//
+//            if (levelColor(nextTopLevel, isNextTopLevelBottomLevel) != GREEN
+//                    && levelColor(nextTopLevel, isNextTopLevelBottomLevel) != RED) {
+//                throw IllegalStateException()
+//            }
+//
+//            isCurrentLevelTopLevel = false
+//            topSubStack = next.stack
+//            next = next.next
+//        }
+//    }
 }

@@ -12,7 +12,7 @@ internal class PersistentDequeIterator<out T>(
     private var isTreeIteratorResultOfNext: Boolean = false
 
     init {
-        assert(index in 0..size)
+//        assert(index in 0..size)
 
         val rhsBuffers = ArrayList<Buffer>()
 

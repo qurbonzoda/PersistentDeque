@@ -25,9 +25,9 @@ internal data class DequeSubStack(val stack: LevelStack, val next: DequeSubStack
 class PersistentDeque<T> internal constructor(
         private val topSubStack: LevelStack?, private val next: DequeSubStack?
 ) {
-    init {
-        assert(topSubStack != null || next == null)
-    }
+//    init {
+//        assert(topSubStack != null || next == null)
+//    }
 
 //    fun contains(element: T): Boolean
 //    fun containsAll(elements: Collection<T>): Boolean
@@ -339,7 +339,7 @@ class PersistentDeque<T> internal constructor(
     }
 
     private fun makeGreenTopLevel(topLevel: DequeLevel, levelIterator: LevelIterator) {
-        assert(levelColor(topLevel, !levelIterator.hasNext()) == RED)
+//        assert(levelColor(topLevel, !levelIterator.hasNext()) == RED)
 
         if (!levelIterator.hasNext()) {
             if (topLevel.lhs is EmptyBuffer && topLevel.rhs is EmptyBuffer) {
@@ -353,13 +353,13 @@ class PersistentDeque<T> internal constructor(
     }
 
     private fun makeGreenTopLevel(topLevel: DequeLevel, nextLevel: DequeLevel, levelIterator: LevelIterator) {
-        assert(topLevel.color == RED)
+//        assert(topLevel.color == RED)
 
         val isNextLevelBottomLevel = !levelIterator.hasNext()
 
         val (newTopLevel, newNextLevel) = makeRedLevelGreen(topLevel, nextLevel)
 
-        assert(newTopLevel.color == GREEN || newNextLevel == null)
+//        assert(newTopLevel.color == GREEN || newNextLevel == null)
 
         if (isNextLevelBottomLevel) {
             if (newNextLevel != null)
@@ -379,7 +379,7 @@ class PersistentDeque<T> internal constructor(
     }
 
     private fun makeBottomLevelsRegular(newNextLevel: DequeLevel, levelIterator: LevelIterator) {
-        assert(newNextLevel.color == RED && levelIterator.hasNext())
+//        assert(newNextLevel.color == RED && levelIterator.hasNext())
 
         if (!levelIterator.hasOnlyOneLevel()) {
             levelIterator.add(newNextLevel)
@@ -392,11 +392,11 @@ class PersistentDeque<T> internal constructor(
         takeCount += if (newNextLevel.rhs.size < 2) 1 else if (newNextLevel.rhs.size > 3) -1 else 0
 
         if (nNLevel.lhs.size + nNLevel.rhs.size <= takeCount) {
-            assert(nNLevel.lhs !is EmptyBuffer || nNLevel.rhs !is EmptyBuffer)
+//            assert(nNLevel.lhs !is EmptyBuffer || nNLevel.rhs !is EmptyBuffer)
 
             val (greenNextLevel, newNNLevel) = makeRedLevelGreen(newNextLevel, nNLevel)
 
-            assert(newNNLevel == null)
+//            assert(newNNLevel == null)
 
             levelIterator.add(greenNextLevel)
         } else {
@@ -406,7 +406,7 @@ class PersistentDeque<T> internal constructor(
     }
 
     private fun makeRedLevelGreen(level: DequeLevel, nextLevel: DequeLevel): Pair<DequeLevel, DequeLevel?> {
-        assert(level.color == RED)
+//        assert(level.color == RED)
 
         var (lhs, rhs) = level
         var (nextLhs, nextRhs) = nextLevel
@@ -441,7 +441,7 @@ class PersistentDeque<T> internal constructor(
 
         val newLevel = DequeLevel(lhs, rhs)
 
-        assert(newLevel.color == GREEN || (nextLhs is EmptyBuffer && nextRhs is EmptyBuffer))
+//        assert(newLevel.color == GREEN || (nextLhs is EmptyBuffer && nextRhs is EmptyBuffer))
 
         if (nextLhs is EmptyBuffer && nextRhs is EmptyBuffer) {
             return Pair(newLevel, null)
