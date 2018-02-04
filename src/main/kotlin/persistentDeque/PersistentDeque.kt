@@ -12,13 +12,7 @@ private fun colorChange(oldColor: Int, newColor: Int): Int {
     return oldColor * 3 + newColor
 }
 
-internal data class DequeLevel(val lhs: Buffer, val rhs: Buffer) {
-    val color = minOf(lhs.color, rhs.color)
-}
-
-private val emptyLevel = DequeLevel(EmptyBuffer, EmptyBuffer)
-
-internal data class LevelStack(val value: DequeLevel, val next: LevelStack?)
+internal data class LevelStack(val lhs: Buffer, val rhs: Buffer, val next: LevelStack?)
 
 internal data class DequeSubStack(val stack: LevelStack, val next: DequeSubStack?)
 
@@ -50,8 +44,10 @@ class PersistentDeque<T> internal constructor(
             var depth = 0
 
             while (levelIterator.hasNext()) {
-                val level = levelIterator.next()
-                size += (level.lhs.size + level.rhs.size) shl depth
+                val lhs = levelIterator.topLhs()
+                val rhs = levelIterator.topRhs()
+                levelIterator.next()
+                size += (lhs.size + rhs.size) shl depth
                 depth += 1
             }
             return size
@@ -59,62 +55,50 @@ class PersistentDeque<T> internal constructor(
 
     val first: T?
         get() {
-            val topLevel = this.topSubStack?.value ?: return null
-            return (if (topLevel.lhs is EmptyBuffer) topLevel.rhs.first else topLevel.lhs.first) as T
+            val topSubStack = this.topSubStack ?: return null
+            return (if (topSubStack.lhs is EmptyBuffer) topSubStack.rhs.first else topSubStack.lhs.first) as T
         }
 
     val last: T?
         get() {
-            val topLevel = this.topSubStack?.value ?: return null
-            return (if (topLevel.rhs is EmptyBuffer) topLevel.lhs.last else topLevel.rhs.last) as T
+            val topSubStack = this.topSubStack ?: return null
+            return (if (topSubStack.rhs is EmptyBuffer) topSubStack.lhs.last else topSubStack.rhs.last) as T
         }
 
     fun addFirst(value: T): PersistentDeque<T> {
         if (this.topSubStack == null) {
-            val level = DequeLevel(BufferOfOne(value as Any), EmptyBuffer)
-            return PersistentDeque(LevelStack(level, null), null)
+            val topSubStack = LevelStack(BufferOfOne(value as Any), EmptyBuffer, null)
+            return PersistentDeque(topSubStack, null)
         }
-
-        val topLevel = this.topSubStack.value
-        val newTopLevel = DequeLevel(topLevel.lhs.addFirst(value as Any), topLevel.rhs)
-
-        return makeDequeRegular(topLevel, newTopLevel)
+        return makeDequeRegular(this.topSubStack.lhs.addFirst(value as Any), this.topSubStack.rhs)
     }
 
     fun removeFirst(): PersistentDeque<T> {
-        val topLevel = this.topSubStack?.value ?: throw NoSuchElementException()
+        val topSubStack = this.topSubStack ?: throw NoSuchElementException()
 
-        val newTopLevel = if (topLevel.lhs is EmptyBuffer) {
-            DequeLevel(topLevel.lhs, topLevel.rhs.removeFirst())
+        return if (topSubStack.lhs is EmptyBuffer) {
+            makeDequeRegular(topSubStack.lhs, topSubStack.rhs.removeFirst())
         } else {
-            DequeLevel(topLevel.lhs.removeFirst(), topLevel.rhs)
+            makeDequeRegular(topSubStack.lhs.removeFirst(), topSubStack.rhs)
         }
-
-        return makeDequeRegular(topLevel, newTopLevel)
     }
 
     fun addLast(value: T): PersistentDeque<T> {
         if (this.topSubStack == null) {
-            val level = DequeLevel(EmptyBuffer, BufferOfOne(value as Any))
-            return PersistentDeque(LevelStack(level, null), null)
+            val topSubStack = LevelStack(EmptyBuffer, BufferOfOne(value as Any), null)
+            return PersistentDeque(topSubStack, null)
         }
-
-        val topLevel = this.topSubStack.value
-        val newTopLevel = DequeLevel(topLevel.lhs, topLevel.rhs.addLast(value as Any))
-
-        return makeDequeRegular(topLevel, newTopLevel)
+        return makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.addLast(value as Any))
     }
 
     fun removeLast(): PersistentDeque<T> {
-        val topLevel = this.topSubStack?.value ?: throw NoSuchElementException()
+        val topLevel = this.topSubStack ?: throw NoSuchElementException()
 
-        val newTopLevel = if (topLevel.rhs is EmptyBuffer) {
-            DequeLevel(topLevel.lhs.removeLast(), topLevel.rhs)
+        return if (topLevel.rhs is EmptyBuffer) {
+            makeDequeRegular(this.topSubStack.lhs.removeLast(), this.topSubStack.rhs)
         } else {
-            DequeLevel(topLevel.lhs, topLevel.rhs.removeLast())
+            makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.removeLast())
         }
-
-        return makeDequeRegular(topLevel, newTopLevel)
     }
 
     fun toList(): List<T> {
@@ -134,7 +118,9 @@ class PersistentDeque<T> internal constructor(
         var depth = 0
 
         while (levelIterator.hasNext()) {
-            var (lhs, rhs) = levelIterator.next()
+            var lhs = levelIterator.topLhs()
+            var rhs = levelIterator.topRhs()
+            levelIterator.next()
 
             if (lIndex < lhs.size shl depth) {
                 while (lIndex >= 1 shl depth) {
@@ -167,14 +153,17 @@ class PersistentDeque<T> internal constructor(
         var rIndex = this.size - index - 1
 
         val levelIterator = LevelIterator(this.topSubStack, this.next)
-        val levelCollector = mutableListOf<DequeLevel>()
+        val lhsCollector = mutableListOf<Buffer>()
+        val rhsCollector = mutableListOf<Buffer>()
 
         var depth = 0
 
         while (levelIterator.hasNext()) {
-            val topLevel = levelIterator.next()
-            if (lIndex < topLevel.lhs.size shl depth) {
-                var lhs = topLevel.lhs
+            var lhs = levelIterator.topLhs()
+            var rhs = levelIterator.topRhs()
+            levelIterator.next()
+
+            if (lIndex < lhs.size shl depth) {
                 val precedingValues = mutableListOf<Any>()
 
                 while (lIndex >= 1 shl depth) {
@@ -191,11 +180,11 @@ class PersistentDeque<T> internal constructor(
                     lhs = lhs.addFirst(precedingValues[precedingIndex--])
                 }
 
-                levelCollector.add(DequeLevel(lhs, topLevel.rhs))
+                lhsCollector.add(lhs)
+                rhsCollector.add(rhs)
                 break
             }
-            if (rIndex < topLevel.rhs.size shl depth) {
-                var rhs = topLevel.rhs
+            if (rIndex < rhs.size shl depth) {
                 val succeedingValues = mutableListOf<Any>()
 
                 while (rIndex >= 1 shl depth) {
@@ -212,20 +201,25 @@ class PersistentDeque<T> internal constructor(
                     rhs = rhs.addLast(succeedingValues[succeedingIndex--])
                 }
 
-                levelCollector.add(DequeLevel(topLevel.lhs, rhs))
+                lhsCollector.add(lhs)
+                rhsCollector.add(rhs)
                 break
             }
 
-            lIndex -= topLevel.lhs.size shl depth
-            rIndex -= topLevel.rhs.size shl depth
+            lIndex -= lhs.size shl depth
+            rIndex -= rhs.size shl depth
 
             depth += 1
-            levelCollector.add(topLevel)
+            lhsCollector.add(lhs)
+            rhsCollector.add(rhs)
         }
 
-        var levelIndex = levelCollector.size - 1
+//        assert(lhsCollector.size == rhsCollector.size)
+
+        var levelIndex = lhsCollector.size - 1
         while (levelIndex >= 0) {
-            levelIterator.add(levelCollector[levelIndex--])
+            levelIterator.add(lhsCollector[levelIndex], rhsCollector[levelIndex])
+            levelIndex -= 1
         }
 
         return levelIterator.createPersistentDeque()
@@ -280,7 +274,9 @@ class PersistentDeque<T> internal constructor(
             return
         }
 
-        var (lhs, rhs) = levelIterator.next()
+        var lhs = levelIterator.topLhs()
+        var rhs = levelIterator.topRhs()
+        levelIterator.next()
 
         while (lhs !is EmptyBuffer) {
             fillListFromNode(lhs.first, depth, list)
@@ -305,32 +301,32 @@ class PersistentDeque<T> internal constructor(
         }
     }
 
-    private fun makeDequeRegular(topLevel: DequeLevel, newTopLevel: DequeLevel): PersistentDeque<T> {
+    private fun makeDequeRegular(newTopLhs: Buffer, newTopRhs: Buffer): PersistentDeque<T> {
         val topSubStackNext = this.topSubStack!!.next
         val next = this.next
 
         val isTopLevelOnlyLevel = isEmpty(topSubStackNext, next)
 
-        return when(colorChange(topLevel, newTopLevel, isTopLevelOnlyLevel)) {
+        return when(colorChange(this.topSubStack.lhs, this.topSubStack.rhs, newTopLhs, newTopRhs, isTopLevelOnlyLevel)) {
             GREEN_GREEN,
             YELLOW_GREEN,
-            YELLOW_YELLOW -> PersistentDeque(LevelStack(newTopLevel, topSubStackNext), next)
+            YELLOW_YELLOW -> PersistentDeque(LevelStack(newTopLhs, newTopRhs, topSubStackNext), next)
 
             GREEN_YELLOW -> {
                 if (isTopLevelOnlyLevel || next == null
-                        || levelColor(next.stack.value, isEmpty(next.stack.next, next.next)) == GREEN) {
-                    PersistentDeque(LevelStack(newTopLevel, topSubStackNext), next)
+                        || levelColor(next.stack.lhs, next.stack.rhs, isEmpty(next.stack.next, next.next)) == GREEN) {
+                    PersistentDeque(LevelStack(newTopLhs, newTopRhs, topSubStackNext), next)
                 } else {
-                    val levelIterator = LevelIterator(next.stack, next.next)
-                    makeGreenTopLevel(levelIterator.next(), levelIterator)
-                    levelIterator.addStack(LevelStack(newTopLevel, topSubStackNext))
+                    val levelIterator = LevelIterator(next.stack.next, next.next)
+                    makeRedLevelGreen(next.stack.lhs, next.stack.rhs, levelIterator)
+                    levelIterator.addStack(LevelStack(newTopLhs, newTopRhs, topSubStackNext))
                     levelIterator.createPersistentDeque()
                 }
             }
 
             YELLOW_RED -> {
                 val levelIterator = LevelIterator(topSubStackNext, next)
-                makeGreenTopLevel(newTopLevel, levelIterator)
+                makeRedLevelGreen(newTopLhs, newTopRhs, levelIterator)
                 levelIterator.createPersistentDeque()
             }
 
@@ -338,78 +334,43 @@ class PersistentDeque<T> internal constructor(
         }
     }
 
-    private fun makeGreenTopLevel(topLevel: DequeLevel, levelIterator: LevelIterator) {
-//        assert(levelColor(topLevel, !levelIterator.hasNext()) == RED)
-
-        if (!levelIterator.hasNext()) {
-            if (topLevel.lhs is EmptyBuffer && topLevel.rhs is EmptyBuffer) {
-                return
-            }
-            makeGreenTopLevel(topLevel, emptyLevel, levelIterator)
-        } else {
-            val nextLevel = levelIterator.next()
-            makeGreenTopLevel(topLevel, nextLevel, levelIterator)
-        }
-    }
-
-    private fun makeGreenTopLevel(topLevel: DequeLevel, nextLevel: DequeLevel, levelIterator: LevelIterator) {
-//        assert(topLevel.color == RED)
-
-        val isNextLevelBottomLevel = !levelIterator.hasNext()
-
-        val (newTopLevel, newNextLevel) = makeRedLevelGreen(topLevel, nextLevel)
-
-//        assert(newTopLevel.color == GREEN || newNextLevel == null)
-
-        if (isNextLevelBottomLevel) {
-            if (newNextLevel != null)
-                levelIterator.add(newNextLevel)
-        }
-        else if (newNextLevel == null) {
-            makeBottomLevelsRegular(emptyLevel, levelIterator)
-        }
-        else if (levelColor(newNextLevel, isBottomLevel = false) == RED) {
-            makeBottomLevelsRegular(newNextLevel, levelIterator)
-        }
-        else {
-            levelIterator.add(newNextLevel)
-        }
-
-        levelIterator.add(newTopLevel)
-    }
-
-    private fun makeBottomLevelsRegular(newNextLevel: DequeLevel, levelIterator: LevelIterator) {
-//        assert(newNextLevel.color == RED && levelIterator.hasNext())
+    private fun makeBottomLevelsRegular(lhs: Buffer, rhs: Buffer, levelIterator: LevelIterator) {
+//        assert(nonBottomLevelColor(lhs, rhs) == RED && levelIterator.hasNext())
 
         if (!levelIterator.hasOnlyOneLevel()) {
-            levelIterator.add(newNextLevel)
+            levelIterator.add(lhs, rhs)
             return
         }
 
-        val nNLevel = levelIterator.next()
+        var takeCount = if (lhs.size < 2) 1 else if (lhs.size > 3) -1 else 0
+        takeCount += if (rhs.size < 2) 1 else if (rhs.size > 3) -1 else 0
 
-        var takeCount = if (newNextLevel.lhs.size < 2) 1 else if (newNextLevel.lhs.size > 3) -1 else 0
-        takeCount += if (newNextLevel.rhs.size < 2) 1 else if (newNextLevel.rhs.size > 3) -1 else 0
-
-        if (nNLevel.lhs.size + nNLevel.rhs.size <= takeCount) {
-//            assert(nNLevel.lhs !is EmptyBuffer || nNLevel.rhs !is EmptyBuffer)
-
-            val (greenNextLevel, newNNLevel) = makeRedLevelGreen(newNextLevel, nNLevel)
-
-//            assert(newNNLevel == null)
-
-            levelIterator.add(greenNextLevel)
+        if (lhs.size + rhs.size <= takeCount) {
+            makeRedLevelGreen(lhs, rhs, levelIterator)
         } else {
-            levelIterator.add(nNLevel)
-            levelIterator.add(newNextLevel)
+            levelIterator.add(lhs, rhs)
         }
     }
 
-    private fun makeRedLevelGreen(level: DequeLevel, nextLevel: DequeLevel): Pair<DequeLevel, DequeLevel?> {
-//        assert(level.color == RED)
+    private fun makeRedLevelGreen(lhs: Buffer, rhs: Buffer, levelIterator: LevelIterator) {
+//        assert(nonBottomLevelColor(lhs, rhs) == RED)
 
-        var (lhs, rhs) = level
-        var (nextLhs, nextRhs) = nextLevel
+        var lhs = lhs
+        var rhs = rhs
+
+        var nextLhs: Buffer
+        var nextRhs: Buffer
+        if (!levelIterator.hasNext()) {
+            if (lhs is EmptyBuffer && rhs is EmptyBuffer) {
+                return
+            }
+            nextLhs = EmptyBuffer
+            nextRhs = EmptyBuffer
+        } else {
+            nextLhs = levelIterator.topLhs()
+            nextRhs = levelIterator.topRhs()
+            levelIterator.next()
+        }
 
         if (lhs.size >= 4) {
             nextLhs = moveLastTwoToNextLevelBuffer(nextLhs, lhs)
@@ -439,17 +400,20 @@ class PersistentDeque<T> internal constructor(
             }
         }
 
-        val newLevel = DequeLevel(lhs, rhs)
+        val isNextLevelEmpty = nextLhs is EmptyBuffer && nextRhs is EmptyBuffer
 
-//        assert(newLevel.color == GREEN || (nextLhs is EmptyBuffer && nextRhs is EmptyBuffer))
-
-        if (nextLhs is EmptyBuffer && nextRhs is EmptyBuffer) {
-            return Pair(newLevel, null)
+        if (!levelIterator.hasNext()) {
+            if (!isNextLevelEmpty) {
+                levelIterator.add(nextLhs, nextRhs)
+            }
         }
-
-        val newNextLevel = DequeLevel(nextLhs, nextRhs)
-
-        return Pair(newLevel, newNextLevel)
+        else if (nonBottomLevelColor(nextLhs, nextRhs) == RED) {
+            makeBottomLevelsRegular(nextLhs, nextRhs, levelIterator)
+        }
+        else {
+            levelIterator.add(nextLhs, nextRhs)
+        }
+        levelIterator.add(lhs, rhs)
     }
 
     private fun moveLastTwoToNextLevelBuffer(nextBuff: Buffer, lhs: Buffer): Buffer {
@@ -478,21 +442,36 @@ class PersistentDeque<T> internal constructor(
         return lhs.addLastTwo(e1, e2) // lhs of size 0 or 1
     }
 
-    private fun levelColor(level: DequeLevel, isBottomLevel: Boolean): Int {
-        return if (isBottomLevel) bottomLevelColor(level) else level.color
+    private fun colorChange(oldLhs: Buffer, oldRhs: Buffer, newLhs: Buffer, newRhs: Buffer, isBottomLevel: Boolean): Int {
+        return if (isBottomLevel)
+            bottomColorChange(oldLhs, oldRhs, newLhs, newRhs)
+        else
+            nonBottomColorChange(oldLhs, oldRhs, newLhs, newRhs)
     }
 
-    private fun colorChange(oldLevel: DequeLevel, newLevel: DequeLevel, isBottomLevel: Boolean): Int {
-        if (isBottomLevel) {
-            return colorChange(bottomLevelColor(oldLevel), bottomLevelColor(newLevel))
-        }
-        return colorChange(oldLevel.color, newLevel.color)
+    private fun nonBottomColorChange(oldLhs: Buffer, oldRhs: Buffer, newLhs: Buffer, newRhs: Buffer): Int {
+        return colorChange(nonBottomLevelColor(oldLhs, oldRhs), nonBottomLevelColor(newLhs, newRhs))
     }
 
-    private fun bottomLevelColor(level: DequeLevel): Int {
-        if (level.lhs is EmptyBuffer) return level.rhs.color
-        if (level.rhs is EmptyBuffer) return level.lhs.color
-        return level.color
+    private fun bottomColorChange(oldLhs: Buffer, oldRhs: Buffer, newLhs: Buffer, newRhs: Buffer): Int {
+        return colorChange(bottomLevelColor(oldLhs, oldRhs), bottomLevelColor(newLhs, newRhs))
+    }
+
+    private fun levelColor(lhs: Buffer, rhs: Buffer, isBottomLevel: Boolean): Int {
+        return if (isBottomLevel)
+            bottomLevelColor(lhs, rhs)
+        else
+            nonBottomLevelColor(lhs, rhs)
+    }
+
+    private fun nonBottomLevelColor(lhs: Buffer, rhs: Buffer): Int {
+        return minOf(lhs.color, rhs.color)
+    }
+
+    private fun bottomLevelColor(lhs: Buffer, rhs: Buffer): Int {
+        if (lhs is EmptyBuffer) return rhs.color
+        if (rhs is EmptyBuffer) return lhs.color
+        return minOf(lhs.color, rhs.color)
     }
 
 

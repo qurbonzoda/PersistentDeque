@@ -1,9 +1,6 @@
 package persistentDeque
 
-import buffer.EmptyBuffer
-import buffer.GREEN
-import buffer.RED
-import buffer.YELLOW
+import buffer.*
 
 internal class LevelIterator(private var topSubStack: LevelStack?, private var next: DequeSubStack?) {
 
@@ -11,29 +8,34 @@ internal class LevelIterator(private var topSubStack: LevelStack?, private var n
         return topSubStack != null || next != null
     }
 
-    fun next(): DequeLevel {
+    fun next() {
         if (topSubStack == null) {
             topSubStack = next!!.stack
             next = next!!.next
         }
-
-        val result = topSubStack!!.value
         topSubStack = topSubStack!!.next
-        return result
     }
 
-    fun add(level: DequeLevel) {
-        if (topSubStack == null || levelColor(topSubStack!!.value, hasOnlyOneLevel()) == YELLOW) {
-            topSubStack = LevelStack(level, topSubStack)
+    fun topLhs(): Buffer {
+        return this.topSubStack?.lhs ?: this.next!!.stack.lhs
+    }
+
+    fun topRhs(): Buffer {
+        return this.topSubStack?.rhs ?: this.next!!.stack.rhs
+    }
+
+    fun add(lhs: Buffer, rhs: Buffer) {
+        if (topSubStack == null || levelColor(topSubStack!!.lhs, topSubStack!!.rhs, hasOnlyOneLevel()) == YELLOW) {
+            topSubStack = LevelStack(lhs, rhs, topSubStack)
         } else {
             next = DequeSubStack(topSubStack!!, next)
-            topSubStack = LevelStack(level, null)
+            topSubStack = LevelStack(lhs, rhs, null)
         }
     }
 
     fun addStack(stack: LevelStack) {
         if (this.topSubStack != null) {
-//            assert(levelColor(this.topSubStack!!.value, hasOnlyOneLevel()) != YELLOW)
+//            assert(levelColor(this.topSubStack!!.lhs, this.topSubStack!!.rhs, hasOnlyOneLevel()) != YELLOW)
             next = DequeSubStack(this.topSubStack!!, next)
         }
         this.topSubStack = stack
@@ -55,14 +57,21 @@ internal class LevelIterator(private var topSubStack: LevelStack?, private var n
         return topSubStack!!.next == null && next == null
     }
 
-    private fun levelColor(level: DequeLevel, isBottomLevel: Boolean): Int {
-        return if (isBottomLevel) bottomLevelColor(level) else level.color
+    private fun levelColor(lhs: Buffer, rhs: Buffer, isBottomLevel: Boolean): Int {
+        return if (isBottomLevel)
+            bottomLevelColor(lhs, rhs)
+        else
+            nonBottomLevelColor(lhs, rhs)
     }
 
-    private fun bottomLevelColor(level: DequeLevel): Int {
-        if (level.lhs is EmptyBuffer) return level.rhs.color
-        if (level.rhs is EmptyBuffer) return level.lhs.color
-        return level.color
+    private fun nonBottomLevelColor(lhs: Buffer, rhs: Buffer): Int {
+        return minOf(lhs.color, rhs.color)
+    }
+
+    private fun bottomLevelColor(lhs: Buffer, rhs: Buffer): Int {
+        if (lhs is EmptyBuffer) return rhs.color
+        if (rhs is EmptyBuffer) return lhs.color
+        return minOf(lhs.color, rhs.color)
     }
 
 //    private fun checkInvariants() {
@@ -76,30 +85,29 @@ internal class LevelIterator(private var topSubStack: LevelStack?, private var n
 //        var isCurrentLevelTopLevel = true
 //
 //        while (topSubStack != null && next != null) {
-//            val currentLevel = topSubStack.value
+//            val colorOfCurrentLevel = nonBottomLevelColor(topSubStack.lhs, topSubStack.rhs)
 //
 //            val isNextTopLevelBottomLevel = next.next == null && next.stack.next == null
-//            val nextTopLevel = next.stack.value
+//            val colorOfNextTopLevel = levelColor(next.stack.lhs, next.stack.rhs, isNextTopLevelBottomLevel)
 //
-//            if (isCurrentLevelTopLevel && currentLevel.color == RED) {
+//            if (isCurrentLevelTopLevel && colorOfCurrentLevel == RED) {
 //                throw IllegalStateException()
 //            }
 //            if (isCurrentLevelTopLevel
-//                    && currentLevel.color == YELLOW
-//                    && levelColor(nextTopLevel, isNextTopLevelBottomLevel) != GREEN) {
+//                    && colorOfCurrentLevel == YELLOW
+//                    && colorOfNextTopLevel != GREEN) {
 //                throw IllegalStateException()
 //            }
-//            if (levelColor(nextTopLevel, isNextTopLevelBottomLevel) == YELLOW) {
+//            if (colorOfNextTopLevel == YELLOW) {
 //                throw IllegalStateException()
 //            }
 //            if (!isCurrentLevelTopLevel
-//                    && currentLevel.color != GREEN
-//                    && levelColor(nextTopLevel, isNextTopLevelBottomLevel) != GREEN) {
+//                    && colorOfCurrentLevel != GREEN
+//                    && colorOfNextTopLevel != GREEN) {
 //                throw IllegalStateException()
 //            }
 //
-//            if (levelColor(nextTopLevel, isNextTopLevelBottomLevel) != GREEN
-//                    && levelColor(nextTopLevel, isNextTopLevelBottomLevel) != RED) {
+//            if (colorOfNextTopLevel != GREEN && colorOfNextTopLevel != RED) {
 //                throw IllegalStateException()
 //            }
 //
