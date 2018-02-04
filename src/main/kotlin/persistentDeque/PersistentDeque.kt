@@ -413,11 +413,11 @@ class PersistentDeque<T> internal constructor(
 
         if (lhs.size >= 4) {
             nextLhs = moveLastTwoToNextLevelBuffer(nextLhs, lhs)
-            lhs = lhs.removeLast().removeLast()
+            lhs = lhs.removeLastTwo()
         }
         if (rhs.size >= 4) {
             nextRhs = moveFirstTwoToNextLevelBuffer(nextRhs, rhs)
-            rhs = rhs.removeFirst().removeFirst()
+            rhs = rhs.removeFirstTwo()
         }
 
         if (lhs.size < 2) {
@@ -470,28 +470,12 @@ class PersistentDeque<T> internal constructor(
 
     private fun moveLastFromNextLevelBufferToRhs(nextBuff: Buffer, rhs: Buffer): Buffer {
         val (e1, e2) = (nextBuff.last as Pair<Any, Any>)
-        return when (rhs) {
-            is EmptyBuffer -> {
-                BufferOfTwo(e1, e2)
-            }
-            is BufferOfOne -> {
-                BufferOfThree(e1, e2, rhs.e)
-            }
-            else -> throw AssertionError("wrong call")
-        }
+        return rhs.addFirstTwo(e1, e2) // rhs of size 0 or 1
     }
 
     private fun moveFirstFromNextLevelBufferToLhs(nextBuff: Buffer, lhs: Buffer): Buffer {
         val (e1, e2) = (nextBuff.first as Pair<Any, Any>)
-        return when (lhs) {
-            is EmptyBuffer -> {
-                BufferOfTwo(e1, e2)
-            }
-            is BufferOfOne -> {
-                BufferOfThree(lhs.e, e1, e2)
-            }
-            else -> throw AssertionError("wrong call")
-        }
+        return lhs.addLastTwo(e1, e2) // lhs of size 0 or 1
     }
 
     private fun levelColor(level: DequeLevel, isBottomLevel: Boolean): Int {
