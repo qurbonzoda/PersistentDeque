@@ -6,6 +6,8 @@ import persistentDeque.emptyDeque
 import java.util.*
 
 class PersistentDequeTest {
+    // TODO: add tests for PersistentDeque of optional values. e.g. PersistentDeque<Int?>
+
     @Test
     fun isEmptyTests() {
         var deque = emptyDeque<String>()

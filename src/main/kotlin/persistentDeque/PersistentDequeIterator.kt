@@ -5,7 +5,7 @@ import buffer.*
 internal class PersistentDequeIterator<out T>(
         levelIterator: LevelIterator, private var index: Int, private val size: Int
 ) : ListIterator<T> {
-    private val treesIterator: ListIterator<Any>
+    private val treesIterator: ListIterator<Any?>
     private val depthsIterator: ListIterator<Int>
 
     private var treeIterator: PerfectBinaryTreeIterator<T>? = null
@@ -16,7 +16,7 @@ internal class PersistentDequeIterator<out T>(
 
         val rhsBuffers = ArrayList<Buffer>()
 
-        val trees = ArrayList<Any>()
+        val trees = ArrayList<Any?>()
         val depths = ArrayList<Int>()
 
         var depth = 0
@@ -66,7 +66,7 @@ internal class PersistentDequeIterator<out T>(
         }
     }
 
-    private fun addTrees(list: ArrayList<Any>, buffer: Buffer) {
+    private fun addTrees(list: ArrayList<Any?>, buffer: Buffer) {
         when (buffer) {
             is BufferOfOne -> {
                 list.add(buffer.e)

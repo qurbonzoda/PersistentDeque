@@ -67,10 +67,10 @@ class PersistentDeque<T> internal constructor(
 
     fun addFirst(value: T): PersistentDeque<T> {
         if (this.topSubStack == null) {
-            val topSubStack = LevelStack(BufferOfOne(value as Any), EmptyBuffer, null)
+            val topSubStack = LevelStack(BufferOfOne(value), EmptyBuffer, null)
             return PersistentDeque(topSubStack, null)
         }
-        return makeDequeRegular(this.topSubStack.lhs.addFirst(value as Any), this.topSubStack.rhs)
+        return makeDequeRegular(this.topSubStack.lhs.addFirst(value), this.topSubStack.rhs)
     }
 
     fun removeFirst(): PersistentDeque<T> {
@@ -85,10 +85,10 @@ class PersistentDeque<T> internal constructor(
 
     fun addLast(value: T): PersistentDeque<T> {
         if (this.topSubStack == null) {
-            val topSubStack = LevelStack(EmptyBuffer, BufferOfOne(value as Any), null)
+            val topSubStack = LevelStack(EmptyBuffer, BufferOfOne(value), null)
             return PersistentDeque(topSubStack, null)
         }
-        return makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.addLast(value as Any))
+        return makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.addLast(value))
     }
 
     fun removeLast(): PersistentDeque<T> {
@@ -164,7 +164,7 @@ class PersistentDeque<T> internal constructor(
             levelIterator.next()
 
             if (lIndex < lhs.size shl depth) {
-                val precedingValues = mutableListOf<Any>()
+                val precedingValues = mutableListOf<Any?>()
 
                 while (lIndex >= 1 shl depth) {
                     precedingValues.add(lhs.first)
@@ -185,7 +185,7 @@ class PersistentDeque<T> internal constructor(
                 break
             }
             if (rIndex < rhs.size shl depth) {
-                val succeedingValues = mutableListOf<Any>()
+                val succeedingValues = mutableListOf<Any?>()
 
                 while (rIndex >= 1 shl depth) {
                     succeedingValues.add(rhs.last)
@@ -238,11 +238,11 @@ class PersistentDeque<T> internal constructor(
         return listIterator()
     }
 
-    private fun get(index: Int, node: Any, depth: Int): T {
+    private fun get(index: Int, node: Any?, depth: Int): T {
         if (depth == 0) {
             return node as T
         }
-        val pair = node as Pair<Any, Any>
+        val pair = node as Pair<*, *>
         val lSize = 1 shl (depth - 1)
 
         if (index < lSize) {
@@ -251,11 +251,11 @@ class PersistentDeque<T> internal constructor(
         return get(index - lSize, pair.second, depth - 1)
     }
 
-    private fun set(index: Int, value: T, node: Any, depth: Int): Any {
+    private fun set(index: Int, value: T, node: Any?, depth: Int): Any? {
         if (depth == 0) {
-            return value as Any
+            return value
         }
-        val pair = node as Pair<Any, Any>
+        val pair = node as Pair<*, *>
         val lSize = 1 shl (depth - 1)
 
         if (index < lSize) {
@@ -291,11 +291,11 @@ class PersistentDeque<T> internal constructor(
         }
     }
 
-    private fun fillListFromNode(node: Any, depth: Int, list: MutableList<T>) {
+    private fun fillListFromNode(node: Any?, depth: Int, list: MutableList<T>) {
         if (depth == 0) {
             list.add(node as T)
         } else {
-            val pair = node as Pair<Any, Any>
+            val pair = node as Pair<*, *>
             fillListFromNode(pair.first, depth - 1, list)
             fillListFromNode(pair.second, depth - 1, list)
         }
@@ -433,12 +433,12 @@ class PersistentDeque<T> internal constructor(
     }
 
     private fun moveLastFromNextLevelBufferToRhs(nextBuff: Buffer, rhs: Buffer): Buffer {
-        val (e1, e2) = (nextBuff.last as Pair<Any, Any>)
+        val (e1, e2) = (nextBuff.last as Pair<*, *>)
         return rhs.addFirstTwo(e1, e2) // rhs of size 0 or 1
     }
 
     private fun moveFirstFromNextLevelBufferToLhs(nextBuff: Buffer, lhs: Buffer): Buffer {
-        val (e1, e2) = (nextBuff.first as Pair<Any, Any>)
+        val (e1, e2) = (nextBuff.first as Pair<*, *>)
         return lhs.addLastTwo(e1, e2) // lhs of size 0 or 1
     }
 
@@ -476,7 +476,7 @@ class PersistentDeque<T> internal constructor(
 
 
     companion object InstanceHolder {
-        val emptyDeque = PersistentDeque<Any>(null, null)
+        val emptyDeque = PersistentDeque<Any?>(null, null)
     }
 }
 

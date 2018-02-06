@@ -1,11 +1,11 @@
 package persistentDeque
 
 internal class PerfectBinaryTreeIterator<out T>(
-        root: Any, depth: Int, private var index: Int
+        root: Any?, depth: Int, private var index: Int
 ): ListIterator<T> {
 
     private val size = 1 shl depth
-    private val path = ArrayList<Any>(depth)
+    private val path = ArrayList<Any?>(depth)
     private var isInRightEdge: Boolean = index == size
 
     init {
@@ -14,7 +14,7 @@ internal class PerfectBinaryTreeIterator<out T>(
         fillPath(root, depth, if (index == size) index - 1 else index)
     }
 
-    private fun fillPath(root: Any, depth: Int, index: Int) {
+    private fun fillPath(root: Any?, depth: Int, index: Int) {
 //        assert(index >= 0 && index < 1 shl depth)
 
         var node = root
@@ -26,10 +26,10 @@ internal class PerfectBinaryTreeIterator<out T>(
             nodeDepth -= 1
 
             node = if (indexInNode < 1 shl nodeDepth) {
-                (node as Pair<Any, Any>).first
+                (node as Pair<*, *>).first
             } else {
                 indexInNode -= 1 shl nodeDepth
-                (node as Pair<Any, Any>).second
+                (node as Pair<*, *>).second
             }
 
             path.add(node)
@@ -61,13 +61,13 @@ internal class PerfectBinaryTreeIterator<out T>(
 
     private fun movePathToNext() {
         val node = path.removeAt(path.size - 1)
-        val parent = path.last() as Pair<Any, Any>
+        val parent = path.last() as Pair<*, *>
 
         if (node === parent.first) {
             path.add(parent.second)
         } else {
             movePathToNext()
-            path.add((path.last() as Pair<Any, Any>).first)
+            path.add((path.last() as Pair<*, *>).first)
         }
     }
 
@@ -89,13 +89,13 @@ internal class PerfectBinaryTreeIterator<out T>(
 
     private fun movePathToPrevious() {
         val node = path.removeAt(path.size - 1)
-        val parent = path.last() as Pair<Any, Any>
+        val parent = path.last() as Pair<*, *>
 
         if (node === parent.second) {
             path.add(parent.first)
         } else {
             movePathToPrevious()
-            path.add((path.last() as Pair<Any, Any>).second)
+            path.add((path.last() as Pair<*, *>).second)
         }
     }
 
