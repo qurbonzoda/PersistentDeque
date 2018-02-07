@@ -28,7 +28,7 @@ internal class PersistentDequeIterator<out T>(
 
             rhsBuffers.add(rhs)
 
-            addTrees(trees, lhs)
+            lhs.addElementsTo(trees)
             addDepths(depths, lhs, depth)
 
             depth += 1
@@ -37,7 +37,7 @@ internal class PersistentDequeIterator<out T>(
         for (rhs in rhsBuffers) {
             depth -= 1
 
-            addTrees(trees, rhs)
+            rhs.addElementsTo(trees)
             addDepths(depths, rhs, depth)
         }
 
@@ -63,36 +63,6 @@ internal class PersistentDequeIterator<out T>(
     private fun addDepths(list: ArrayList<Int>, buffer: Buffer, depth: Int) {
         repeat(times = buffer.size) {
             list.add(depth)
-        }
-    }
-
-    private fun addTrees(list: ArrayList<Any?>, buffer: Buffer) {
-        when (buffer) {
-            is BufferOfOne -> {
-                list.add(buffer.e)
-            }
-            is BufferOfTwo -> {
-                list.add(buffer.e1)
-                list.add(buffer.e2)
-            }
-            is BufferOfThree -> {
-                list.add(buffer.e1)
-                list.add(buffer.e2)
-                list.add(buffer.e3)
-            }
-            is BufferOfFour -> {
-                list.add(buffer.e1)
-                list.add(buffer.e2)
-                list.add(buffer.e3)
-                list.add(buffer.e4)
-            }
-            is BufferOfFive -> {
-                list.add(buffer.e1)
-                list.add(buffer.e2)
-                list.add(buffer.e3)
-                list.add(buffer.e4)
-                list.add(buffer.e5)
-            }
         }
     }
 

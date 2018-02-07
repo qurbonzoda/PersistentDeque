@@ -334,29 +334,8 @@ class PersistentDeque<T> internal constructor(
         }
     }
 
-    private fun makeBottomLevelsRegular(lhs: Buffer, rhs: Buffer, levelIterator: LevelIterator) {
-//        assert(nonBottomLevelColor(lhs, rhs) == RED && levelIterator.hasNext())
-
-        if (!levelIterator.hasOnlyOneLevel()) {
-            levelIterator.add(lhs, rhs)
-            return
-        }
-
-        var takeCount = if (lhs.size < 2) 1 else if (lhs.size > 3) -1 else 0
-        takeCount += if (rhs.size < 2) 1 else if (rhs.size > 3) -1 else 0
-
-        if (lhs.size + rhs.size <= takeCount) {
-            makeRedLevelGreen(lhs, rhs, levelIterator)
-        } else {
-            levelIterator.add(lhs, rhs)
-        }
-    }
-
     private fun makeRedLevelGreen(lhs: Buffer, rhs: Buffer, levelIterator: LevelIterator) {
 //        assert(nonBottomLevelColor(lhs, rhs) == RED)
-
-        var lhs = lhs
-        var rhs = rhs
 
         var nextLhs: Buffer
         var nextRhs: Buffer
@@ -372,12 +351,15 @@ class PersistentDeque<T> internal constructor(
             levelIterator.next()
         }
 
+        var lhs = lhs
+        var rhs = rhs
+
         if (lhs.size >= 4) {
-            nextLhs = moveLastTwoToNextLevelBuffer(nextLhs, lhs)
+            nextLhs = lhs.addFirstPairOfLastTwoElementsTo(nextLhs)
             lhs = lhs.removeLastTwo()
         }
         if (rhs.size >= 4) {
-            nextRhs = moveFirstTwoToNextLevelBuffer(nextRhs, rhs)
+            nextRhs = rhs.addLastPairOfFirstTwoElementsTo(nextRhs)
             rhs = rhs.removeFirstTwo()
         }
 
@@ -402,34 +384,22 @@ class PersistentDeque<T> internal constructor(
 
         val isNextLevelEmpty = nextLhs is EmptyBuffer && nextRhs is EmptyBuffer
 
-        if (!levelIterator.hasNext()) {
-            if (!isNextLevelEmpty) {
-                levelIterator.add(nextLhs, nextRhs)
-            }
-        }
-        else if (nonBottomLevelColor(nextLhs, nextRhs) == RED) {
-            makeBottomLevelsRegular(nextLhs, nextRhs, levelIterator)
-        }
-        else {
+        if (shouldMakeGreenNextLevel(nextLhs, nextRhs, levelIterator)) {
+            makeRedLevelGreen(nextLhs, nextRhs, levelIterator)
+        } else if (levelIterator.hasNext() || !isNextLevelEmpty) {
             levelIterator.add(nextLhs, nextRhs)
         }
         levelIterator.add(lhs, rhs)
     }
 
-    private fun moveLastTwoToNextLevelBuffer(nextBuff: Buffer, lhs: Buffer): Buffer {
-        return when (lhs) {
-            is BufferOfFour -> nextBuff.addFirst(Pair(lhs.e3, lhs.e4))
-            is BufferOfFive -> nextBuff.addFirst(Pair(lhs.e4, lhs.e5))
-            else -> throw AssertionError("wrong call")
-        }
-    }
+    private fun shouldMakeGreenNextLevel(nextLhs: Buffer, nextRhs: Buffer, levelIterator: LevelIterator): Boolean {
+        if (!levelIterator.hasNext() || !levelIterator.hasOnlyOneLevel()) return false
+        if (nonBottomLevelColor(nextLhs, nextRhs) != RED) return false
 
-    private fun moveFirstTwoToNextLevelBuffer(nextBuff: Buffer, rhs: Buffer): Buffer {
-        return when (rhs) {
-            is BufferOfFour -> nextBuff.addLast(Pair(rhs.e1, rhs.e2))
-            is BufferOfFive -> nextBuff.addLast(Pair(rhs.e1, rhs.e2))
-            else -> throw AssertionError("wrong call")
-        }
+        var takeCount = if (nextLhs.size < 2) 1 else if (nextLhs.size > 3) -1 else 0
+        takeCount += if (nextRhs.size < 2) 1 else if (nextRhs.size > 3) -1 else 0
+
+        return levelIterator.topLhs().size + levelIterator.topRhs().size <= takeCount
     }
 
     private fun moveLastFromNextLevelBufferToRhs(nextBuff: Buffer, rhs: Buffer): Buffer {

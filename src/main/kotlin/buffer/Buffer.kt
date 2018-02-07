@@ -18,6 +18,11 @@ sealed class Buffer {
     abstract fun removeFirstTwo(): Buffer
     abstract fun removeLast(): Buffer
     abstract fun removeLastTwo(): Buffer
+    abstract fun addElementsTo(l: ArrayList<Any?>)
+    abstract fun addFirstPairOfLastTwoElementsTo(buffer: Buffer): Buffer
+    abstract fun addLastPairOfFirstTwoElementsTo(buffer: Buffer): Buffer
+    abstract fun addLastFirstTwoElementsTo(buffer: Buffer): Buffer
+    abstract fun addFirstLastTwoElementsTo(buffer: Buffer): Buffer
 }
 
 object EmptyBuffer : Buffer() {
@@ -38,6 +43,12 @@ object EmptyBuffer : Buffer() {
     override fun removeFirstTwo() = throw UnsupportedOperationException()
     override fun removeLast() = throw UnsupportedOperationException()
     override fun removeLastTwo() = throw UnsupportedOperationException()
+
+    override fun addElementsTo(l: ArrayList<Any?>) { /* Do nothing */ }
+    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
+    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
+    override fun addLastFirstTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
+    override fun addFirstLastTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
 }
 
 data class BufferOfOne(val e: Any?) : Buffer() {
@@ -56,6 +67,12 @@ data class BufferOfOne(val e: Any?) : Buffer() {
     override fun removeFirstTwo() = throw UnsupportedOperationException()
     override fun removeLast() = EmptyBuffer
     override fun removeLastTwo() = throw UnsupportedOperationException()
+
+    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e) }
+    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
+    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
+    override fun addLastFirstTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
+    override fun addFirstLastTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
 }
 
 data class BufferOfTwo(val e1: Any?, val e2: Any?) : Buffer() {
@@ -74,6 +91,12 @@ data class BufferOfTwo(val e1: Any?, val e2: Any?) : Buffer() {
     override fun removeFirstTwo() = EmptyBuffer
     override fun removeLast() = BufferOfOne(e1)
     override fun removeLastTwo() = EmptyBuffer
+
+    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e1); l.add(e2) }
+    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = buffer.addFirst(Pair(e1, e2))
+    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = buffer.addLast(Pair(e1, e2))
+    override fun addLastFirstTwoElementsTo(buffer: Buffer) = buffer.addLastTwo(e1, e2)
+    override fun addFirstLastTwoElementsTo(buffer: Buffer) = buffer.addFirstTwo(e1, e2)
 }
 
 data class BufferOfThree(val e1: Any?, val e2: Any?, val e3: Any?) : Buffer() {
@@ -92,6 +115,12 @@ data class BufferOfThree(val e1: Any?, val e2: Any?, val e3: Any?) : Buffer() {
     override fun removeFirstTwo() = BufferOfOne(e3)
     override fun removeLast() = BufferOfTwo(e1, e2)
     override fun removeLastTwo() = BufferOfOne(e1)
+
+    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e1); l.add(e2); l.add(e3) }
+    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = buffer.addFirst(Pair(e2, e3))
+    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = buffer.addLast(Pair(e1, e2))
+    override fun addLastFirstTwoElementsTo(buffer: Buffer) = buffer.addLastTwo(e1, e2)
+    override fun addFirstLastTwoElementsTo(buffer: Buffer) = buffer.addFirstTwo(e2, e3)
 }
 
 data class BufferOfFour(val e1: Any?, val e2: Any?, val e3: Any?, val e4: Any?) : Buffer() {
@@ -110,6 +139,12 @@ data class BufferOfFour(val e1: Any?, val e2: Any?, val e3: Any?, val e4: Any?) 
     override fun removeFirstTwo() = BufferOfTwo(e3, e4)
     override fun removeLast() = BufferOfThree(e1, e2, e3)
     override fun removeLastTwo() = BufferOfTwo(e1, e2)
+
+    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e1); l.add(e2); l.add(e3); l.add(e4) }
+    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = buffer.addFirst(Pair(e3, e4))
+    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = buffer.addLast(Pair(e1, e2))
+    override fun addLastFirstTwoElementsTo(buffer: Buffer) = buffer.addLastTwo(e1, e2)
+    override fun addFirstLastTwoElementsTo(buffer: Buffer) = buffer.addFirstTwo(e3, e4)
 }
 
 data class BufferOfFive(val e1: Any?, val e2: Any?, val e3: Any?, val e4: Any?, val e5: Any?) : Buffer() {
@@ -128,4 +163,10 @@ data class BufferOfFive(val e1: Any?, val e2: Any?, val e3: Any?, val e4: Any?, 
     override fun removeFirstTwo() = BufferOfThree(e3, e4, e5)
     override fun removeLast() = BufferOfFour(e1, e2, e3, e4)
     override fun removeLastTwo() = BufferOfThree(e1, e2, e3)
+
+    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e1); l.add(e2); l.add(e3); l.add(e4); l.add(e5) }
+    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = buffer.addFirst(Pair(e4, e5))
+    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = buffer.addLast(Pair(e1, e2))
+    override fun addLastFirstTwoElementsTo(buffer: Buffer) = buffer.addLastTwo(e1, e2)
+    override fun addFirstLastTwoElementsTo(buffer: Buffer) = buffer.addFirstTwo(e4, e5)
 }
