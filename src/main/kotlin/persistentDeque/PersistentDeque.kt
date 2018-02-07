@@ -2,16 +2,6 @@ package persistentDeque
 
 import buffer.*
 
-private const val YELLOW_RED = 3
-private const val YELLOW_YELLOW = 4
-private const val YELLOW_GREEN = 5
-private const val GREEN_YELLOW = 7
-private const val GREEN_GREEN = 8
-
-private fun colorChange(oldColor: Int, newColor: Int): Int {
-    return oldColor * 3 + newColor
-}
-
 internal data class LevelStack(val lhs: Buffer, val rhs: Buffer, val next: LevelStack?)
 
 internal data class DequeSubStack(val stack: LevelStack, val next: DequeSubStack?)
@@ -354,17 +344,36 @@ class PersistentDeque<T> internal constructor(
         var lhs = lhs
         var rhs = rhs
 
-        if (lhs.size >= 4) {
+        val maxAllowedNextLhsPush = if (nextLhs.color == GREEN) YELLOW_HIGH - nextLhs.size else RED_HIGH - nextLhs.size
+        val shouldLhsMoveFour = lhs.size >= GREEN_LOW + 4 && maxAllowedNextLhsPush >= 2
+
+        if (shouldLhsMoveFour) {
+            nextLhs = lhs.pushTwoPairsOfBottomFourElementsTo(nextLhs, isLhs = true)
+            lhs = lhs.removeBottomFour()
+        } else if (lhs.size >= YELLOW_HIGH) {
             nextLhs = lhs.pushPairOfBottomTwoElementsTo(nextLhs, isLhs = true)
             lhs = lhs.removeBottomTwo()
         }
-        if (rhs.size >= 4) {
+
+        val maxAllowedNextRhsPush = if (nextRhs.color == GREEN) YELLOW_HIGH - nextRhs.size else RED_HIGH - nextRhs.size
+        val shouldRhsMoveFour = rhs.size >= GREEN_LOW + 4 && maxAllowedNextRhsPush >= 2
+
+        if (shouldRhsMoveFour) {
+            nextRhs = rhs.pushTwoPairsOfBottomFourElementsTo(nextRhs, isLhs = false)
+            rhs = rhs.removeBottomFour()
+        } else if (rhs.size >= YELLOW_HIGH) {
             nextRhs = rhs.pushPairOfBottomTwoElementsTo(nextRhs, isLhs = false)
             rhs = rhs.removeBottomTwo()
         }
 
-        if (lhs.size < 2) {
-            if (nextLhs.size > 0) {
+        if (lhs.size < GREEN_LOW) {
+            val maxAllowedNextLhsPop = if (nextLhs.color == GREEN) nextLhs.size - YELLOW_LOW else nextLhs.size
+            val shouldLhsPrependFour = lhs.size + 4 <= GREEN_HIGH && maxAllowedNextLhsPop >= 2
+
+            if (shouldLhsPrependFour) {
+                lhs = nextLhs.prependFourTopTwoElementsToPrevLevel(lhs, isLhs = true)
+                nextLhs = nextLhs.popTwo()
+            } else if (nextLhs.size > 0) {
                 val (e1, e2) = nextLhs.top as Pair<*, *>
                 lhs = lhs.prependTwo(e2, e1)
                 nextLhs = nextLhs.pop()
@@ -374,8 +383,14 @@ class PersistentDeque<T> internal constructor(
                 nextRhs = nextRhs.removeBottom()
             }
         }
-        if (rhs.size < 2) {
-            if (nextRhs.size > 0) {
+        if (rhs.size < GREEN_LOW) {
+            val maxAllowedNextRhsPop = if (nextRhs.color == GREEN) nextRhs.size - YELLOW_LOW else nextRhs.size
+            val shouldRhsPrependFour = rhs.size + 4 <= GREEN_HIGH && maxAllowedNextRhsPop >= 2
+
+            if (shouldRhsPrependFour) {
+                rhs = nextRhs.prependFourTopTwoElementsToPrevLevel(rhs, isLhs = false)
+                nextRhs = nextRhs.popTwo()
+            } else if (nextRhs.size > 0) {
                 val (e1, e2) = nextRhs.top as Pair<*, *>
                 rhs = rhs.prependTwo(e1, e2)
                 nextRhs = nextRhs.pop()
@@ -400,8 +415,8 @@ class PersistentDeque<T> internal constructor(
         if (!levelIterator.hasNext() || !levelIterator.hasOnlyOneLevel()) return false
         if (nonBottomLevelColor(nextLhs, nextRhs) != RED) return false
 
-        var takeCount = if (nextLhs.size < 2) 1 else if (nextLhs.size > 3) -1 else 0
-        takeCount += if (nextRhs.size < 2) 1 else if (nextRhs.size > 3) -1 else 0
+        var takeCount = if (nextLhs.size <= YELLOW_LOW) 1 else if (nextLhs.size >= YELLOW_HIGH) -1 else 0
+        takeCount += if (nextRhs.size <= YELLOW_LOW) 1 else if (nextRhs.size >= YELLOW_HIGH) -1 else 0
 
         return levelIterator.topLhs().size + levelIterator.topRhs().size <= takeCount
     }
