@@ -56,48 +56,48 @@ class PersistentDeque<T> internal constructor(
     val first: T?
         get() {
             val topSubStack = this.topSubStack ?: return null
-            return (if (topSubStack.lhs is EmptyBuffer) topSubStack.rhs.first else topSubStack.lhs.first) as T
+            return (if (topSubStack.lhs === Buffer.empty) topSubStack.rhs.bottom else topSubStack.lhs.top) as T
         }
 
     val last: T?
         get() {
             val topSubStack = this.topSubStack ?: return null
-            return (if (topSubStack.rhs is EmptyBuffer) topSubStack.lhs.last else topSubStack.rhs.last) as T
+            return (if (topSubStack.rhs === Buffer.empty) topSubStack.lhs.bottom else topSubStack.rhs.top) as T
         }
 
     fun addFirst(value: T): PersistentDeque<T> {
         if (this.topSubStack == null) {
-            val topSubStack = LevelStack(BufferOfOne(value), EmptyBuffer, null)
+            val topSubStack = LevelStack(Buffer.empty.push(value), Buffer.empty, null)
             return PersistentDeque(topSubStack, null)
         }
-        return makeDequeRegular(this.topSubStack.lhs.addFirst(value), this.topSubStack.rhs)
+        return makeDequeRegular(this.topSubStack.lhs.push(value), this.topSubStack.rhs)
     }
 
     fun removeFirst(): PersistentDeque<T> {
         val topSubStack = this.topSubStack ?: throw NoSuchElementException()
 
-        return if (topSubStack.lhs is EmptyBuffer) {
-            makeDequeRegular(topSubStack.lhs, topSubStack.rhs.removeFirst())
+        return if (topSubStack.lhs === Buffer.empty) {
+            makeDequeRegular(topSubStack.lhs, topSubStack.rhs.removeBottom())
         } else {
-            makeDequeRegular(topSubStack.lhs.removeFirst(), topSubStack.rhs)
+            makeDequeRegular(topSubStack.lhs.pop(), topSubStack.rhs)
         }
     }
 
     fun addLast(value: T): PersistentDeque<T> {
         if (this.topSubStack == null) {
-            val topSubStack = LevelStack(EmptyBuffer, BufferOfOne(value), null)
+            val topSubStack = LevelStack(Buffer.empty, Buffer.empty.push(value), null)
             return PersistentDeque(topSubStack, null)
         }
-        return makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.addLast(value))
+        return makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.push(value))
     }
 
     fun removeLast(): PersistentDeque<T> {
         val topLevel = this.topSubStack ?: throw NoSuchElementException()
 
-        return if (topLevel.rhs is EmptyBuffer) {
-            makeDequeRegular(this.topSubStack.lhs.removeLast(), this.topSubStack.rhs)
+        return if (topLevel.rhs === Buffer.empty) {
+            makeDequeRegular(this.topSubStack.lhs.removeBottom(), this.topSubStack.rhs)
         } else {
-            makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.removeLast())
+            makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.pop())
         }
     }
 
@@ -125,16 +125,16 @@ class PersistentDeque<T> internal constructor(
             if (lIndex < lhs.size shl depth) {
                 while (lIndex >= 1 shl depth) {
                     lIndex -= 1 shl depth
-                    lhs = lhs.removeFirst()
+                    lhs = lhs.pop()
                 }
-                return get(lIndex, lhs.first, depth)
+                return get(lIndex, lhs.top, depth)
             }
             if (rIndex < rhs.size shl depth) {
                 while (rIndex >= 1 shl depth) {
                     rIndex -= 1 shl depth
-                    rhs = rhs.removeLast()
+                    rhs = rhs.pop()
                 }
-                return get((1 shl depth) - rIndex - 1, rhs.last, depth)
+                return get((1 shl depth) - rIndex - 1, rhs.top, depth)
             }
 
             lIndex -= lhs.size shl depth
@@ -167,17 +167,17 @@ class PersistentDeque<T> internal constructor(
                 val precedingValues = mutableListOf<Any?>()
 
                 while (lIndex >= 1 shl depth) {
-                    precedingValues.add(lhs.first)
-                    lhs = lhs.removeFirst()
+                    precedingValues.add(lhs.top)
+                    lhs = lhs.pop()
                     lIndex -= 1 shl depth
                 }
 
-                val newFirst = set(lIndex, value, lhs.first, depth)
-                lhs = lhs.removeFirst().addFirst(newFirst)
+                val newFirst = set(lIndex, value, lhs.top, depth)
+                lhs = lhs.pop().push(newFirst)
 
                 var precedingIndex = precedingValues.size - 1
                 while (precedingIndex >= 0) {
-                    lhs = lhs.addFirst(precedingValues[precedingIndex--])
+                    lhs = lhs.push(precedingValues[precedingIndex--])
                 }
 
                 lhsCollector.add(lhs)
@@ -188,17 +188,17 @@ class PersistentDeque<T> internal constructor(
                 val succeedingValues = mutableListOf<Any?>()
 
                 while (rIndex >= 1 shl depth) {
-                    succeedingValues.add(rhs.last)
-                    rhs = rhs.removeLast()
+                    succeedingValues.add(rhs.top)
+                    rhs = rhs.pop()
                     rIndex -= 1 shl depth
                 }
 
-                val newLast = set((1 shl depth) - rIndex - 1, value, rhs.last, depth)
-                rhs = rhs.removeLast().addLast(newLast)
+                val newLast = set((1 shl depth) - rIndex - 1, value, rhs.top, depth)
+                rhs = rhs.pop().push(newLast)
 
                 var succeedingIndex = succeedingValues.size - 1
                 while (succeedingIndex >= 0) {
-                    rhs = rhs.addLast(succeedingValues[succeedingIndex--])
+                    rhs = rhs.push(succeedingValues[succeedingIndex--])
                 }
 
                 lhsCollector.add(lhs)
@@ -278,16 +278,16 @@ class PersistentDeque<T> internal constructor(
         var rhs = levelIterator.topRhs()
         levelIterator.next()
 
-        while (lhs !is EmptyBuffer) {
-            fillListFromNode(lhs.first, depth, list)
-            lhs = lhs.removeFirst()
+        while (lhs !== Buffer.empty) {
+            fillListFromNode(lhs.top, depth, list)
+            lhs = lhs.pop()
         }
 
         fillListFromStack(levelIterator, depth + 1, list)
 
-        while (rhs !is EmptyBuffer) {
-            fillListFromNode(rhs.first, depth, list)
-            rhs = rhs.removeFirst()
+        while (rhs !== Buffer.empty) {
+            fillListFromNode(rhs.bottom, depth, list)
+            rhs = rhs.removeBottom()
         }
     }
 
@@ -340,11 +340,11 @@ class PersistentDeque<T> internal constructor(
         var nextLhs: Buffer
         var nextRhs: Buffer
         if (!levelIterator.hasNext()) {
-            if (lhs is EmptyBuffer && rhs is EmptyBuffer) {
+            if (lhs === Buffer.empty && rhs === Buffer.empty) {
                 return
             }
-            nextLhs = EmptyBuffer
-            nextRhs = EmptyBuffer
+            nextLhs = Buffer.empty
+            nextRhs = Buffer.empty
         } else {
             nextLhs = levelIterator.topLhs()
             nextRhs = levelIterator.topRhs()
@@ -355,34 +355,38 @@ class PersistentDeque<T> internal constructor(
         var rhs = rhs
 
         if (lhs.size >= 4) {
-            nextLhs = lhs.addFirstPairOfLastTwoElementsTo(nextLhs)
-            lhs = lhs.removeLastTwo()
+            nextLhs = lhs.pushPairOfBottomTwoElementsTo(nextLhs, isLhs = true)
+            lhs = lhs.removeBottomTwo()
         }
         if (rhs.size >= 4) {
-            nextRhs = rhs.addLastPairOfFirstTwoElementsTo(nextRhs)
-            rhs = rhs.removeFirstTwo()
+            nextRhs = rhs.pushPairOfBottomTwoElementsTo(nextRhs, isLhs = false)
+            rhs = rhs.removeBottomTwo()
         }
 
         if (lhs.size < 2) {
             if (nextLhs.size > 0) {
-                lhs = moveFirstFromNextLevelBufferToLhs(nextLhs, lhs)
-                nextLhs = nextLhs.removeFirst()
+                val (e1, e2) = nextLhs.top as Pair<*, *>
+                lhs = lhs.prependTwo(e2, e1)
+                nextLhs = nextLhs.pop()
             } else if (nextRhs.size > 0) {
-                lhs = moveFirstFromNextLevelBufferToLhs(nextRhs, lhs)
-                nextRhs = nextRhs.removeFirst()
+                val (e1, e2) = nextRhs.bottom as Pair<*, *>
+                lhs = lhs.prependTwo(e2, e1)
+                nextRhs = nextRhs.removeBottom()
             }
         }
         if (rhs.size < 2) {
             if (nextRhs.size > 0) {
-                rhs = moveLastFromNextLevelBufferToRhs(nextRhs, rhs)
-                nextRhs = nextRhs.removeLast()
+                val (e1, e2) = nextRhs.top as Pair<*, *>
+                rhs = rhs.prependTwo(e1, e2)
+                nextRhs = nextRhs.pop()
             } else if (nextLhs.size > 0) {
-                rhs = moveLastFromNextLevelBufferToRhs(nextLhs, rhs)
-                nextLhs = nextLhs.removeLast()
+                val (e1, e2) = nextLhs.bottom as Pair<*, *>
+                rhs = rhs.prependTwo(e1, e2)
+                nextLhs = nextLhs.removeBottom()
             }
         }
 
-        val isNextLevelEmpty = nextLhs is EmptyBuffer && nextRhs is EmptyBuffer
+        val isNextLevelEmpty = nextLhs.size == 0 && nextRhs.size == 0
 
         if (shouldMakeGreenNextLevel(nextLhs, nextRhs, levelIterator)) {
             makeRedLevelGreen(nextLhs, nextRhs, levelIterator)
@@ -400,16 +404,6 @@ class PersistentDeque<T> internal constructor(
         takeCount += if (nextRhs.size < 2) 1 else if (nextRhs.size > 3) -1 else 0
 
         return levelIterator.topLhs().size + levelIterator.topRhs().size <= takeCount
-    }
-
-    private fun moveLastFromNextLevelBufferToRhs(nextBuff: Buffer, rhs: Buffer): Buffer {
-        val (e1, e2) = (nextBuff.last as Pair<*, *>)
-        return rhs.addFirstTwo(e1, e2) // rhs of size 0 or 1
-    }
-
-    private fun moveFirstFromNextLevelBufferToLhs(nextBuff: Buffer, lhs: Buffer): Buffer {
-        val (e1, e2) = (nextBuff.first as Pair<*, *>)
-        return lhs.addLastTwo(e1, e2) // lhs of size 0 or 1
     }
 
     private fun colorChange(oldLhs: Buffer, oldRhs: Buffer, newLhs: Buffer, newRhs: Buffer, isBottomLevel: Boolean): Int {
@@ -439,8 +433,8 @@ class PersistentDeque<T> internal constructor(
     }
 
     private fun bottomLevelColor(lhs: Buffer, rhs: Buffer): Int {
-        if (lhs is EmptyBuffer) return rhs.color
-        if (rhs is EmptyBuffer) return lhs.color
+        if (lhs === Buffer.empty) return rhs.color
+        if (rhs === Buffer.empty) return lhs.color
         return minOf(lhs.color, rhs.color)
     }
 

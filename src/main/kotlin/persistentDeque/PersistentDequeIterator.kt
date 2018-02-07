@@ -28,7 +28,7 @@ internal class PersistentDequeIterator<out T>(
 
             rhsBuffers.add(rhs)
 
-            lhs.addElementsTo(trees)
+            lhs.addElementsTo(trees, reverseOrder = false)
             addDepths(depths, lhs, depth)
 
             depth += 1
@@ -37,7 +37,7 @@ internal class PersistentDequeIterator<out T>(
         for (rhs in rhsBuffers) {
             depth -= 1
 
-            rhs.addElementsTo(trees)
+            rhs.addElementsTo(trees, reverseOrder = true)
             addDepths(depths, rhs, depth)
         }
 
