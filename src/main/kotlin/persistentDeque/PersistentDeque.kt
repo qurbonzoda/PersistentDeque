@@ -117,14 +117,14 @@ class PersistentDeque<T> internal constructor(
                     lIndex -= 1 shl depth
                     lhs = lhs.pop()
                 }
-                return get(lIndex, lhs.top, depth)
+                return lhs.getLeafValueAt(lIndex, depth) as T
             }
             if (rIndex < rhs.size shl depth) {
                 while (rIndex >= 1 shl depth) {
                     rIndex -= 1 shl depth
                     rhs = rhs.pop()
                 }
-                return get((1 shl depth) - rIndex - 1, rhs.top, depth)
+                return rhs.getLeafValueAt((1 shl depth) - rIndex - 1, depth) as T
             }
 
             lIndex -= lhs.size shl depth
@@ -154,42 +154,14 @@ class PersistentDeque<T> internal constructor(
             levelIterator.next()
 
             if (lIndex < lhs.size shl depth) {
-                val precedingValues = mutableListOf<Any?>()
-
-                while (lIndex >= 1 shl depth) {
-                    precedingValues.add(lhs.top)
-                    lhs = lhs.pop()
-                    lIndex -= 1 shl depth
-                }
-
-                val newFirst = set(lIndex, value, lhs.top, depth)
-                lhs = lhs.pop().push(newFirst)
-
-                var precedingIndex = precedingValues.size - 1
-                while (precedingIndex >= 0) {
-                    lhs = lhs.push(precedingValues[precedingIndex--])
-                }
+                lhs = lhs.setAt(lIndex, value, depth, true)
 
                 lhsCollector.add(lhs)
                 rhsCollector.add(rhs)
                 break
             }
             if (rIndex < rhs.size shl depth) {
-                val succeedingValues = mutableListOf<Any?>()
-
-                while (rIndex >= 1 shl depth) {
-                    succeedingValues.add(rhs.top)
-                    rhs = rhs.pop()
-                    rIndex -= 1 shl depth
-                }
-
-                val newLast = set((1 shl depth) - rIndex - 1, value, rhs.top, depth)
-                rhs = rhs.pop().push(newLast)
-
-                var succeedingIndex = succeedingValues.size - 1
-                while (succeedingIndex >= 0) {
-                    rhs = rhs.push(succeedingValues[succeedingIndex--])
-                }
+                rhs = rhs.setAt(rIndex, value, depth, false)
 
                 lhsCollector.add(lhs)
                 rhsCollector.add(rhs)
@@ -228,34 +200,6 @@ class PersistentDeque<T> internal constructor(
         return listIterator()
     }
 
-    private fun get(index: Int, node: Any?, depth: Int): T {
-        if (depth == 0) {
-            return node as T
-        }
-        val pair = node as Pair<*, *>
-        val lSize = 1 shl (depth - 1)
-
-        if (index < lSize) {
-            return get(index, pair.first, depth - 1)
-        }
-        return get(index - lSize, pair.second, depth - 1)
-    }
-
-    private fun set(index: Int, value: T, node: Any?, depth: Int): Any? {
-        if (depth == 0) {
-            return value
-        }
-        val pair = node as Pair<*, *>
-        val lSize = 1 shl (depth - 1)
-
-        if (index < lSize) {
-            val newFirst = set(index, value, pair.first, depth - 1)
-            return Pair(newFirst, pair.second)
-        }
-        val newSecond = set(index - lSize, value, pair.second, depth - 1)
-        return Pair(pair.first, newSecond)
-    }
-
     private fun fillListFromStack(levelIterator: LevelIterator,
                                   depth: Int,
                                   list: MutableList<T>) {
@@ -264,31 +208,13 @@ class PersistentDeque<T> internal constructor(
             return
         }
 
-        var lhs = levelIterator.topLhs()
-        var rhs = levelIterator.topRhs()
+        val lhs = levelIterator.topLhs()
+        val rhs = levelIterator.topRhs()
         levelIterator.next()
 
-        while (lhs !== Buffer.empty) {
-            fillListFromNode(lhs.top, depth, list)
-            lhs = lhs.pop()
-        }
-
+        lhs.fillList(list as MutableList<Any?>, depth, true)
         fillListFromStack(levelIterator, depth + 1, list)
-
-        while (rhs !== Buffer.empty) {
-            fillListFromNode(rhs.bottom, depth, list)
-            rhs = rhs.removeBottom()
-        }
-    }
-
-    private fun fillListFromNode(node: Any?, depth: Int, list: MutableList<T>) {
-        if (depth == 0) {
-            list.add(node as T)
-        } else {
-            val pair = node as Pair<*, *>
-            fillListFromNode(pair.first, depth - 1, list)
-            fillListFromNode(pair.second, depth - 1, list)
-        }
+        rhs.fillList(list as MutableList<Any?>, depth, false)
     }
 
     private fun makeDequeRegular(newTopLhs: Buffer, newTopRhs: Buffer): PersistentDeque<T> {
