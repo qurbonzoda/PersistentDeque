@@ -4,7 +4,7 @@ const val RED = 0
 const val YELLOW = 1
 const val GREEN = 2
 
-const val MAX_BUFFER_SIZE = 25
+const val MAX_BUFFER_SIZE = 5
 const val RED_LOW = 0
 const val RED_HIGH = MAX_BUFFER_SIZE
 const val YELLOW_LOW = 1
@@ -30,19 +30,16 @@ class Buffer private constructor(val top: Any?, val size: Int, private val next:
             else                    -> GREEN
         }
 
-    val bottom: Any?
-        get() {
-            if (this.size == 1) return this.top
-            return this.next!!.bottom
-        }
+    val bottom: Any? = this.pop(this.size - 1).top
 
     fun push(element: Any?): Buffer {
         return Buffer(element, this.size + 1, this)
     }
 
     fun pop(count: Int = 1): Buffer {
-        if (count == 1) return this.next!!
-        return this.next!!.pop(count - 1)
+        var buffer = this
+        repeat(count) { buffer = buffer.next!! }
+        return buffer
     }
 
     fun removeBottom(count: Int = 1): Buffer {
@@ -65,12 +62,17 @@ class Buffer private constructor(val top: Any?, val size: Int, private val next:
     fun pushPairsOfBottomElementsTo(buffer: Buffer, maxPushCount: Int, isLhs: Boolean): Buffer {
         if (this === empty) return buffer
 
-        val result = this.next!!.pushPairsOfBottomElementsTo(buffer, maxPushCount, isLhs)
-        if (this.size % 2 == 0 && this.size <= maxPushCount * 2) {
-            val pair = if (isLhs) Pair(this.top, this.next.top) else Pair(this.next.top, this.top)
-            return result.push(pair)
-        }
-        return result
+        var result = if ((this.size and 1) == 1) this.next!! else this
+        result = result.pop(result.size - (maxPushCount shl 1))
+        return result._pushPairsOfBottomElementsTo(buffer, isLhs)
+    }
+
+    private fun _pushPairsOfBottomElementsTo(buffer: Buffer, isLhs: Boolean): Buffer {
+        if (this === empty) return buffer
+
+        val result = this.next!!.next!!._pushPairsOfBottomElementsTo(buffer, isLhs)
+        val pair = if (isLhs) Pair(this.top, this.next.top) else Pair(this.next.top, this.top)
+        return result.push(pair)
     }
 
     fun topElementsToPrevLevel(maxPopCount: Int, isLhs: Boolean): Buffer {
@@ -85,20 +87,24 @@ class Buffer private constructor(val top: Any?, val size: Int, private val next:
             result.push(e1).push(e2)
         }
     }
-    fun bottomElementsToPrevLevel(buffer: Buffer, maxRemoveBottomCount: Int, isLhs: Boolean): Buffer {
-        if (this === empty) return buffer
 
-        if (this.size <= maxRemoveBottomCount) {
-            val (e1, e2) = this.top as Pair<*, *>
+    fun bottomElementsToPrevLevel(maxRemoveBottomCount: Int, isLhs: Boolean): Buffer {
+        if (this === empty) return empty
 
-            val result = if (isLhs) {
-                buffer.push(e2).push(e1)
+        var result = empty
+        var buffer = this.pop(this.size - maxRemoveBottomCount)
+
+        repeat(maxRemoveBottomCount) {
+            val (e1, e2) = buffer.top as Pair<*, *>
+            buffer = buffer.pop()
+
+            result = if (isLhs) {
+                result.push(e2).push(e1)
             } else {
-                buffer.push(e1).push(e2)
+                result.push(e1).push(e2)
             }
-            return this.next!!.bottomElementsToPrevLevel(result, maxRemoveBottomCount, isLhs)
         }
-        return this.next!!.bottomElementsToPrevLevel(buffer, maxRemoveBottomCount, isLhs)
+        return result
     }
 
     fun prependSavingOrder(buffer: Buffer): Buffer {

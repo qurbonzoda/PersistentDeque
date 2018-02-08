@@ -376,7 +376,7 @@ class PersistentDeque<T> internal constructor(
                 lhs = lhs.prependSavingOrder(topElements)
                 nextLhs = nextLhs.pop(nextLhsPopCount)
             } else if(nextRhsRemoveBottomCount > 0) {
-                val bottomElements = nextRhs.bottomElementsToPrevLevel(Buffer.empty, nextRhsRemoveBottomCount, isLhs = true)
+                val bottomElements = nextRhs.bottomElementsToPrevLevel(nextRhsRemoveBottomCount, isLhs = true)
                 lhs = lhs.prependSavingOrder(bottomElements)
                 nextRhs = nextRhs.removeBottom(nextRhsRemoveBottomCount)
             }
@@ -391,7 +391,7 @@ class PersistentDeque<T> internal constructor(
                 rhs = rhs.prependSavingOrder(topElements)
                 nextRhs = nextRhs.pop(nextRhsPopCount)
             } else if (nextLhsRemoveBottomCount > 0) {
-                val bottomElements = nextLhs.bottomElementsToPrevLevel(Buffer.empty, nextLhsRemoveBottomCount, isLhs = false)
+                val bottomElements = nextLhs.bottomElementsToPrevLevel(nextLhsRemoveBottomCount, isLhs = false)
                 rhs = rhs.prependSavingOrder(bottomElements)
                 nextLhs = nextLhs.removeBottom(nextLhsRemoveBottomCount)
             }
