@@ -344,60 +344,56 @@ class PersistentDeque<T> internal constructor(
         var lhs = lhs
         var rhs = rhs
 
-        val maxAllowedNextLhsPush = if (nextLhs.color == GREEN) YELLOW_HIGH - nextLhs.size else RED_HIGH - nextLhs.size
-        val shouldLhsMoveFour = lhs.size >= GREEN_LOW + 4 && maxAllowedNextLhsPush >= 2
+        val hasNextLevel = levelIterator.hasNext()
 
-        if (shouldLhsMoveFour) {
-            nextLhs = lhs.pushTwoPairsOfBottomFourElementsTo(nextLhs, isLhs = true)
-            lhs = lhs.removeBottomFour()
-        } else if (lhs.size >= YELLOW_HIGH) {
-            nextLhs = lhs.pushPairOfBottomTwoElementsTo(nextLhs, isLhs = true)
-            lhs = lhs.removeBottomTwo()
+        val nextLevelAllowedPushDeficit = if (hasNextLevel && nonBottomLevelColor(nextLhs, nextRhs) == GREEN) 1 else 0
+
+        if (lhs.size >= YELLOW_HIGH) {
+            val nextLhsPushCount = minOf(RED_HIGH - nextLhs.size - nextLevelAllowedPushDeficit, (lhs.size - GREEN_LOW) shr 1)
+            if (nextLhsPushCount > 0) {
+                nextLhs = lhs.pushPairsOfBottomElementsTo(nextLhs, nextLhsPushCount, isLhs = true)
+                lhs = lhs.removeBottom(nextLhsPushCount * 2)
+            }
         }
 
-        val maxAllowedNextRhsPush = if (nextRhs.color == GREEN) YELLOW_HIGH - nextRhs.size else RED_HIGH - nextRhs.size
-        val shouldRhsMoveFour = rhs.size >= GREEN_LOW + 4 && maxAllowedNextRhsPush >= 2
-
-        if (shouldRhsMoveFour) {
-            nextRhs = rhs.pushTwoPairsOfBottomFourElementsTo(nextRhs, isLhs = false)
-            rhs = rhs.removeBottomFour()
-        } else if (rhs.size >= YELLOW_HIGH) {
-            nextRhs = rhs.pushPairOfBottomTwoElementsTo(nextRhs, isLhs = false)
-            rhs = rhs.removeBottomTwo()
+        if (rhs.size >= YELLOW_HIGH) {
+            val nextRhsPushCount = minOf(RED_HIGH - nextRhs.size - nextLevelAllowedPushDeficit, (rhs.size - GREEN_LOW) shr 1)
+            if (nextRhsPushCount > 0) {
+                nextRhs = rhs.pushPairsOfBottomElementsTo(nextRhs, nextRhsPushCount, isLhs = false)
+                rhs = rhs.removeBottom(nextRhsPushCount * 2)
+            }
         }
 
         if (lhs.size < GREEN_LOW) {
-            val maxAllowedNextLhsPop = if (nextLhs.color == GREEN) nextLhs.size - YELLOW_LOW else nextLhs.size
-            val shouldLhsPrependFour = lhs.size + 4 <= GREEN_HIGH && maxAllowedNextLhsPop >= 2
+            val toLeaveNextLhsForRhs = if (rhs.size < GREEN_LOW && !hasNextLevel && nextRhs.size == 0) 1 else 0
+            val nextLhsPopCount = minOf(nextLhs.size - nextLevelAllowedPushDeficit - toLeaveNextLhsForRhs, (GREEN_HIGH - lhs.size) shr 1)
 
-            if (shouldLhsPrependFour) {
-                lhs = nextLhs.prependFourTopTwoElementsToPrevLevel(lhs, isLhs = true)
-                nextLhs = nextLhs.popTwo()
-            } else if (nextLhs.size > 0) {
-                val (e1, e2) = nextLhs.top as Pair<*, *>
-                lhs = lhs.prependTwo(e2, e1)
-                nextLhs = nextLhs.pop()
-            } else if (nextRhs.size > 0) {
-                val (e1, e2) = nextRhs.bottom as Pair<*, *>
-                lhs = lhs.prependTwo(e2, e1)
-                nextRhs = nextRhs.removeBottom()
+            val toLeaveNextRhsForRhs = if (rhs.size < GREEN_LOW && !hasNextLevel) 1 else 0
+            val nextRhsRemoveBottomCount = minOf(nextRhs.size - nextLevelAllowedPushDeficit - toLeaveNextRhsForRhs, (GREEN_HIGH - lhs.size) shr 1)
+
+            if (nextLhsPopCount > 0) {
+                val topElements = nextLhs.topElementsToPrevLevel(nextLhsPopCount, isLhs = true)
+                lhs = lhs.prependSavingOrder(topElements)
+                nextLhs = nextLhs.pop(nextLhsPopCount)
+            } else if(nextRhsRemoveBottomCount > 0) {
+                val bottomElements = nextRhs.bottomElementsToPrevLevel(Buffer.empty, nextRhsRemoveBottomCount, isLhs = true)
+                lhs = lhs.prependSavingOrder(bottomElements)
+                nextRhs = nextRhs.removeBottom(nextRhsRemoveBottomCount)
             }
         }
-        if (rhs.size < GREEN_LOW) {
-            val maxAllowedNextRhsPop = if (nextRhs.color == GREEN) nextRhs.size - YELLOW_LOW else nextRhs.size
-            val shouldRhsPrependFour = rhs.size + 4 <= GREEN_HIGH && maxAllowedNextRhsPop >= 2
 
-            if (shouldRhsPrependFour) {
-                rhs = nextRhs.prependFourTopTwoElementsToPrevLevel(rhs, isLhs = false)
-                nextRhs = nextRhs.popTwo()
-            } else if (nextRhs.size > 0) {
-                val (e1, e2) = nextRhs.top as Pair<*, *>
-                rhs = rhs.prependTwo(e1, e2)
-                nextRhs = nextRhs.pop()
-            } else if (nextLhs.size > 0) {
-                val (e1, e2) = nextLhs.bottom as Pair<*, *>
-                rhs = rhs.prependTwo(e1, e2)
-                nextLhs = nextLhs.removeBottom()
+        if (rhs.size < GREEN_LOW) {
+            val nextRhsPopCount = minOf(nextRhs.size - nextLevelAllowedPushDeficit, (GREEN_HIGH - rhs.size) shr 1)
+            val nextLhsRemoveBottomCount = minOf(nextLhs.size - nextLevelAllowedPushDeficit, (GREEN_HIGH - rhs.size) shr 1)
+
+            if (nextRhsPopCount > 0) {
+                val topElements = nextRhs.topElementsToPrevLevel(nextRhsPopCount, isLhs = false)
+                rhs = rhs.prependSavingOrder(topElements)
+                nextRhs = nextRhs.pop(nextRhsPopCount)
+            } else if (nextLhsRemoveBottomCount > 0) {
+                val bottomElements = nextLhs.bottomElementsToPrevLevel(Buffer.empty, nextLhsRemoveBottomCount, isLhs = false)
+                rhs = rhs.prependSavingOrder(bottomElements)
+                nextLhs = nextLhs.removeBottom(nextLhsRemoveBottomCount)
             }
         }
 
