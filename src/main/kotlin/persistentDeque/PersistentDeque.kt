@@ -56,18 +56,18 @@ class PersistentDeque<T> internal constructor(
     val first: T?
         get() {
             val topSubStack = this.topSubStack ?: return null
-            return (if (topSubStack.lhs is EmptyBuffer) topSubStack.rhs.first else topSubStack.lhs.first) as T
+            return (if (topSubStack.lhs.isEmpty) topSubStack.rhs.first else topSubStack.lhs.first) as T
         }
 
     val last: T?
         get() {
             val topSubStack = this.topSubStack ?: return null
-            return (if (topSubStack.rhs is EmptyBuffer) topSubStack.lhs.last else topSubStack.rhs.last) as T
+            return (if (topSubStack.rhs.isEmpty) topSubStack.lhs.last else topSubStack.rhs.last) as T
         }
 
     fun addFirst(value: T): PersistentDeque<T> {
         if (this.topSubStack == null) {
-            val topSubStack = LevelStack(BufferOfOne(value), EmptyBuffer, null)
+            val topSubStack = LevelStack(Buffer.empty.addFirst(value), Buffer.empty, null)
             return PersistentDeque(topSubStack, null)
         }
         return makeDequeRegular(this.topSubStack.lhs.addFirst(value), this.topSubStack.rhs)
@@ -76,7 +76,7 @@ class PersistentDeque<T> internal constructor(
     fun removeFirst(): PersistentDeque<T> {
         val topSubStack = this.topSubStack ?: throw NoSuchElementException()
 
-        return if (topSubStack.lhs is EmptyBuffer) {
+        return if (topSubStack.lhs.isEmpty) {
             makeDequeRegular(topSubStack.lhs, topSubStack.rhs.removeFirst())
         } else {
             makeDequeRegular(topSubStack.lhs.removeFirst(), topSubStack.rhs)
@@ -85,7 +85,7 @@ class PersistentDeque<T> internal constructor(
 
     fun addLast(value: T): PersistentDeque<T> {
         if (this.topSubStack == null) {
-            val topSubStack = LevelStack(EmptyBuffer, BufferOfOne(value), null)
+            val topSubStack = LevelStack(Buffer.empty, Buffer.empty.addFirst(value), null)
             return PersistentDeque(topSubStack, null)
         }
         return makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.addLast(value))
@@ -94,7 +94,7 @@ class PersistentDeque<T> internal constructor(
     fun removeLast(): PersistentDeque<T> {
         val topLevel = this.topSubStack ?: throw NoSuchElementException()
 
-        return if (topLevel.rhs is EmptyBuffer) {
+        return if (topLevel.rhs.isEmpty) {
             makeDequeRegular(this.topSubStack.lhs.removeLast(), this.topSubStack.rhs)
         } else {
             makeDequeRegular(this.topSubStack.lhs, this.topSubStack.rhs.removeLast())
@@ -278,14 +278,14 @@ class PersistentDeque<T> internal constructor(
         var rhs = levelIterator.topRhs()
         levelIterator.next()
 
-        while (lhs !is EmptyBuffer) {
+        while (!lhs.isEmpty) {
             fillListFromNode(lhs.first, depth, list)
             lhs = lhs.removeFirst()
         }
 
         fillListFromStack(levelIterator, depth + 1, list)
 
-        while (rhs !is EmptyBuffer) {
+        while (!rhs.isEmpty) {
             fillListFromNode(rhs.first, depth, list)
             rhs = rhs.removeFirst()
         }
@@ -340,11 +340,11 @@ class PersistentDeque<T> internal constructor(
         var nextLhs: Buffer
         var nextRhs: Buffer
         if (!levelIterator.hasNext()) {
-            if (lhs is EmptyBuffer && rhs is EmptyBuffer) {
+            if (lhs.isEmpty && rhs.isEmpty) {
                 return
             }
-            nextLhs = EmptyBuffer
-            nextRhs = EmptyBuffer
+            nextLhs = Buffer.empty
+            nextRhs = Buffer.empty
         } else {
             nextLhs = levelIterator.topLhs()
             nextRhs = levelIterator.topRhs()
@@ -382,7 +382,7 @@ class PersistentDeque<T> internal constructor(
             }
         }
 
-        val isNextLevelEmpty = nextLhs is EmptyBuffer && nextRhs is EmptyBuffer
+        val isNextLevelEmpty = nextLhs.isEmpty && nextRhs.isEmpty
 
         if (shouldMakeGreenNextLevel(nextLhs, nextRhs, levelIterator)) {
             makeRedLevelGreen(nextLhs, nextRhs, levelIterator)
@@ -439,8 +439,8 @@ class PersistentDeque<T> internal constructor(
     }
 
     private fun bottomLevelColor(lhs: Buffer, rhs: Buffer): Int {
-        if (lhs is EmptyBuffer) return rhs.color
-        if (rhs is EmptyBuffer) return lhs.color
+        if (lhs.isEmpty) return rhs.color
+        if (rhs.isEmpty) return lhs.color
         return minOf(lhs.color, rhs.color)
     }
 

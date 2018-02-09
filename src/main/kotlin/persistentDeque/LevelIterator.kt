@@ -69,8 +69,8 @@ internal class LevelIterator(private var topSubStack: LevelStack?, private var n
     }
 
     private fun bottomLevelColor(lhs: Buffer, rhs: Buffer): Int {
-        if (lhs is EmptyBuffer) return rhs.color
-        if (rhs is EmptyBuffer) return lhs.color
+        if (lhs.isEmpty) return rhs.color
+        if (rhs.isEmpty) return lhs.color
         return minOf(lhs.color, rhs.color)
     }
 

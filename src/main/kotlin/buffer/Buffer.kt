@@ -5,168 +5,119 @@ const val YELLOW = 1
 const val GREEN = 2
 
 
-sealed class Buffer {
-    abstract val color: Int
-    abstract val size: Int
-    abstract val first: Any?
-    abstract val last: Any?
-    abstract fun addFirst(element: Any?): Buffer
-    abstract fun addFirstTwo(element1: Any?, element2: Any?): Buffer
-    abstract fun addLast(element: Any?): Buffer
-    abstract fun addLastTwo(element1: Any?, element2: Any?): Buffer
-    abstract fun removeFirst(): Buffer
-    abstract fun removeFirstTwo(): Buffer
-    abstract fun removeLast(): Buffer
-    abstract fun removeLastTwo(): Buffer
-    abstract fun addElementsTo(l: ArrayList<Any?>)
-    abstract fun addFirstPairOfLastTwoElementsTo(buffer: Buffer): Buffer
-    abstract fun addLastPairOfFirstTwoElementsTo(buffer: Buffer): Buffer
-    abstract fun addLastFirstTwoElementsTo(buffer: Buffer): Buffer
-    abstract fun addFirstLastTwoElementsTo(buffer: Buffer): Buffer
-}
+class Buffer private constructor(val size: Int,
+                                 private val e1: Any?,
+                                 private val e2: Any?,
+                                 private val e3: Any?,
+                                 private val e4: Any?,
+                                 private val e5: Any?) {
+    val isEmpty: Boolean = size == 0
 
-object EmptyBuffer : Buffer() {
-    override val color: Int = RED
-    override val size: Int = 0
+    val color: Int = when (size) {
+        0, 5 -> RED
+        1, 4 -> YELLOW
+        else -> GREEN
+    }
 
-    override val first: Any?
-        get() = throw UnsupportedOperationException()
-    override val last: Any?
-        get() = throw UnsupportedOperationException()
+    val first: Any? = e1
 
-    override fun addFirst(element: Any?) = BufferOfOne(element)
-    override fun addFirstTwo(element1: Any?, element2: Any?) = BufferOfTwo(element1, element2)
-    override fun addLast(element: Any?) = BufferOfOne(element)
-    override fun addLastTwo(element1: Any?, element2: Any?) = BufferOfTwo(element1, element2)
+    val last: Any?
+        get() {
+            return when (size) {
+                1 -> e1
+                2 -> e2
+                3 -> e3
+                4 -> e4
+                else -> e5
+            }
+        }
 
-    override fun removeFirst() = throw UnsupportedOperationException()
-    override fun removeFirstTwo() = throw UnsupportedOperationException()
-    override fun removeLast() = throw UnsupportedOperationException()
-    override fun removeLastTwo() = throw UnsupportedOperationException()
+    fun addFirst(element: Any?): Buffer {
+        return Buffer(size + 1, element, e1, e2, e3, e4)
+    }
 
-    override fun addElementsTo(l: ArrayList<Any?>) { /* Do nothing */ }
-    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
-    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
-    override fun addLastFirstTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
-    override fun addFirstLastTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
-}
+    fun addFirstTwo(element1: Any?, element2: Any?): Buffer {
+        return Buffer(size + 2, element1, element2, e1, e2, e3)
+    }
 
-data class BufferOfOne(val e: Any?) : Buffer() {
-    override val color: Int = YELLOW
-    override val size: Int = 1
+    fun addLast(element: Any?): Buffer {
+        return when (size) {
+            0 -> Buffer(size + 1, element, e1, e2, e3, e4)
+            1 -> Buffer(size + 1, e1, element, e2, e3, e4)
+            2 -> Buffer(size + 1, e1, e2, element, e3, e4)
+            3 -> Buffer(size + 1, e1, e2, e3, element, e4)
+            else -> Buffer(size + 1, e1, e2, e3, e4, element)
+        }
+    }
 
-    override val first = e
-    override val last = e
+    fun addLastTwo(element1: Any?, element2: Any?): Buffer {
+        return when (size) {
+            0 -> Buffer(size + 2, element1, element2, e1, e2, e3)
+            1 -> Buffer(size + 2, e1, element1, element2, e2, e3)
+            2 -> Buffer(size + 2, e1, e2, element1, element2, e3)
+            else -> Buffer(size + 2, e1, e2, e3, element1, element2)
+        }
+    }
 
-    override fun addFirst(element: Any?) = BufferOfTwo(element, e)
-    override fun addFirstTwo(element1: Any?, element2: Any?) = BufferOfThree(element1, element2, e)
-    override fun addLast(element: Any?) = BufferOfTwo(e, element)
-    override fun addLastTwo(element1: Any?, element2: Any?) = BufferOfThree(e, element1, element2)
+    fun removeFirst(): Buffer {
+        return Buffer(size - 1, e2, e3, e4, e5, null)
+    }
 
-    override fun removeFirst() = EmptyBuffer
-    override fun removeFirstTwo() = throw UnsupportedOperationException()
-    override fun removeLast() = EmptyBuffer
-    override fun removeLastTwo() = throw UnsupportedOperationException()
+    fun removeFirstTwo(): Buffer {
+        return Buffer(size - 2, e3, e4, e5, null, null)
+    }
 
-    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e) }
-    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
-    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
-    override fun addLastFirstTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
-    override fun addFirstLastTwoElementsTo(buffer: Buffer) = throw UnsupportedOperationException()
-}
+    fun removeLast(): Buffer {
+        return when (size) {
+            1 -> Buffer(size - 1, null, e2, e3, e4, e5)
+            2 -> Buffer(size - 1, e1, null, e3, e4, e5)
+            3 -> Buffer(size - 1, e1, e2, null, e4, e5)
+            4 -> Buffer(size - 1, e1, e2, e3, null, e5)
+            else -> Buffer(size - 1, e1, e2, e3, e4, null)
+        }
+    }
 
-data class BufferOfTwo(val e1: Any?, val e2: Any?) : Buffer() {
-    override val color: Int = GREEN
-    override val size: Int = 2
+    fun removeLastTwo(): Buffer {
+        return when (size) {
+            2 -> Buffer(size - 2, null, null, e3, e4, e5)
+            3 -> Buffer(size - 2, e1, null, null, e4, e5)
+            4 -> Buffer(size - 2, e1, e2, null, null, e5)
+            else -> Buffer(size - 2, e1, e2, e3, null, null)
+        }
+    }
 
-    override val first = e1
-    override val last = e2
+    fun addElementsTo(l: ArrayList<Any?>) {
+        if (size >= 1) {
+            l.add(e1)
+        }
+        if (size >= 2) {
+            l.add(e2)
+        }
+        if (size >= 3) {
+            l.add(e3)
+        }
+        if (size >= 4) {
+            l.add(e4)
+        }
+        if (size >= 5) {
+            l.add(e5)
+        }
+    }
 
-    override fun addFirst(element: Any?) = BufferOfThree(element, e1, e2)
-    override fun addFirstTwo(element1: Any?, element2: Any?) = BufferOfFour(element1, element2, e1, e2)
-    override fun addLast(element: Any?) = BufferOfThree(e1, e2, element)
-    override fun addLastTwo(element1: Any?, element2: Any?) = BufferOfFour(e1, e2, element1, element2)
+    fun addFirstPairOfLastTwoElementsTo(buffer: Buffer): Buffer {
+        return when (size) {
+            2 -> buffer.addFirst(Pair(e1, e2))
+            3 -> buffer.addFirst(Pair(e2, e3))
+            4 -> buffer.addFirst(Pair(e3, e4))
+            else -> buffer.addFirst(Pair(e4, e5))
+        }
+    }
 
-    override fun removeFirst() = BufferOfOne(e2)
-    override fun removeFirstTwo() = EmptyBuffer
-    override fun removeLast() = BufferOfOne(e1)
-    override fun removeLastTwo() = EmptyBuffer
+    fun addLastPairOfFirstTwoElementsTo(buffer: Buffer): Buffer {
+        return buffer.addLast(Pair(e1, e2))
+    }
 
-    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e1); l.add(e2) }
-    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = buffer.addFirst(Pair(e1, e2))
-    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = buffer.addLast(Pair(e1, e2))
-    override fun addLastFirstTwoElementsTo(buffer: Buffer) = buffer.addLastTwo(e1, e2)
-    override fun addFirstLastTwoElementsTo(buffer: Buffer) = buffer.addFirstTwo(e1, e2)
-}
-
-data class BufferOfThree(val e1: Any?, val e2: Any?, val e3: Any?) : Buffer() {
-    override val color: Int = GREEN
-    override val size: Int = 3
-
-    override val first = e1
-    override val last = e3
-
-    override fun addFirst(element: Any?) = BufferOfFour(element, e1, e2, e3)
-    override fun addFirstTwo(element1: Any?, element2: Any?) = BufferOfFive(element1, element2, e1, e2, e3)
-    override fun addLast(element: Any?) = BufferOfFour(e1, e2, e3, element)
-    override fun addLastTwo(element1: Any?, element2: Any?) = BufferOfFive(e1, e2, e3, element1, element2)
-
-    override fun removeFirst() = BufferOfTwo(e2, e3)
-    override fun removeFirstTwo() = BufferOfOne(e3)
-    override fun removeLast() = BufferOfTwo(e1, e2)
-    override fun removeLastTwo() = BufferOfOne(e1)
-
-    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e1); l.add(e2); l.add(e3) }
-    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = buffer.addFirst(Pair(e2, e3))
-    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = buffer.addLast(Pair(e1, e2))
-    override fun addLastFirstTwoElementsTo(buffer: Buffer) = buffer.addLastTwo(e1, e2)
-    override fun addFirstLastTwoElementsTo(buffer: Buffer) = buffer.addFirstTwo(e2, e3)
-}
-
-data class BufferOfFour(val e1: Any?, val e2: Any?, val e3: Any?, val e4: Any?) : Buffer() {
-    override val color: Int = YELLOW
-    override val size: Int = 4
-
-    override val first = e1
-    override val last = e4
-
-    override fun addFirst(element: Any?) = BufferOfFive(element, e1, e2, e3, e4)
-    override fun addFirstTwo(element1: Any?, element2: Any?) = throw UnsupportedOperationException()
-    override fun addLast(element: Any?) = BufferOfFive(e1, e2, e3, e4, element)
-    override fun addLastTwo(element1: Any?, element2: Any?) = throw UnsupportedOperationException()
-
-    override fun removeFirst() = BufferOfThree(e2, e3, e4)
-    override fun removeFirstTwo() = BufferOfTwo(e3, e4)
-    override fun removeLast() = BufferOfThree(e1, e2, e3)
-    override fun removeLastTwo() = BufferOfTwo(e1, e2)
-
-    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e1); l.add(e2); l.add(e3); l.add(e4) }
-    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = buffer.addFirst(Pair(e3, e4))
-    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = buffer.addLast(Pair(e1, e2))
-    override fun addLastFirstTwoElementsTo(buffer: Buffer) = buffer.addLastTwo(e1, e2)
-    override fun addFirstLastTwoElementsTo(buffer: Buffer) = buffer.addFirstTwo(e3, e4)
-}
-
-data class BufferOfFive(val e1: Any?, val e2: Any?, val e3: Any?, val e4: Any?, val e5: Any?) : Buffer() {
-    override val color: Int = RED
-    override val size: Int = 5
-
-    override val first = e1
-    override val last = e5
-
-    override fun addFirst(element: Any?) = throw UnsupportedOperationException()
-    override fun addFirstTwo(element1: Any?, element2: Any?) = throw UnsupportedOperationException()
-    override fun addLast(element: Any?) = throw UnsupportedOperationException()
-    override fun addLastTwo(element1: Any?, element2: Any?) = throw UnsupportedOperationException()
-
-    override fun removeFirst() = BufferOfFour(e2, e3, e4, e5)
-    override fun removeFirstTwo() = BufferOfThree(e3, e4, e5)
-    override fun removeLast() = BufferOfFour(e1, e2, e3, e4)
-    override fun removeLastTwo() = BufferOfThree(e1, e2, e3)
-
-    override fun addElementsTo(l: ArrayList<Any?>) { l.add(e1); l.add(e2); l.add(e3); l.add(e4); l.add(e5) }
-    override fun addFirstPairOfLastTwoElementsTo(buffer: Buffer) = buffer.addFirst(Pair(e4, e5))
-    override fun addLastPairOfFirstTwoElementsTo(buffer: Buffer) = buffer.addLast(Pair(e1, e2))
-    override fun addLastFirstTwoElementsTo(buffer: Buffer) = buffer.addLastTwo(e1, e2)
-    override fun addFirstLastTwoElementsTo(buffer: Buffer) = buffer.addFirstTwo(e4, e5)
+    companion object InstanceHolder {
+        val empty = Buffer(0, null, null, null, null, null)
+    }
 }
