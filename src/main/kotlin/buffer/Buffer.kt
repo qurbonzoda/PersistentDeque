@@ -5,12 +5,7 @@ const val YELLOW = 1
 const val GREEN = 2
 
 
-class Buffer private constructor(val size: Int,
-                                 private val e1: Any?,
-                                 private val e2: Any?,
-                                 private val e3: Any?,
-                                 private val e4: Any?,
-                                 private val e5: Any?) {
+class Buffer private constructor(val size: Int, private val es: Array<Any?>) {
     val isEmpty: Boolean = size == 0
 
     val color: Int = when (size) {
@@ -19,105 +14,84 @@ class Buffer private constructor(val size: Int,
         else -> GREEN
     }
 
-    val first: Any? = e1
+    val first: Any? = es[0]
 
-    val last: Any?
-        get() {
-            return when (size) {
-                1 -> e1
-                2 -> e2
-                3 -> e3
-                4 -> e4
-                else -> e5
-            }
-        }
+    val last: Any? = if (isEmpty) null else es[size - 1]
 
     fun addFirst(element: Any?): Buffer {
-        return Buffer(size + 1, element, e1, e2, e3, e4)
+        return Buffer(size + 1, arrayOf(element, es[0], es[1], es[2], es[3]))
     }
 
     fun addFirstTwo(element1: Any?, element2: Any?): Buffer {
-        return Buffer(size + 2, element1, element2, e1, e2, e3)
+        return Buffer(size + 2, arrayOf(element1, element2, es[0], es[1], es[2]))
     }
 
     fun addLast(element: Any?): Buffer {
         return when (size) {
-            0 -> Buffer(size + 1, element, e1, e2, e3, e4)
-            1 -> Buffer(size + 1, e1, element, e2, e3, e4)
-            2 -> Buffer(size + 1, e1, e2, element, e3, e4)
-            3 -> Buffer(size + 1, e1, e2, e3, element, e4)
-            else -> Buffer(size + 1, e1, e2, e3, e4, element)
+            0 -> Buffer(size + 1, arrayOf(element, null, null, null, null))
+            1 -> Buffer(size + 1, arrayOf(es[0], element, null, null, null))
+            2 -> Buffer(size + 1, arrayOf(es[0], es[1], element, null, null))
+            3 -> Buffer(size + 1, arrayOf(es[0], es[1], es[2], element, null))
+            else -> Buffer(size + 1, arrayOf(es[0], es[1], es[2], es[3], element))
         }
     }
 
     fun addLastTwo(element1: Any?, element2: Any?): Buffer {
         return when (size) {
-            0 -> Buffer(size + 2, element1, element2, e1, e2, e3)
-            1 -> Buffer(size + 2, e1, element1, element2, e2, e3)
-            2 -> Buffer(size + 2, e1, e2, element1, element2, e3)
-            else -> Buffer(size + 2, e1, e2, e3, element1, element2)
+            0 -> Buffer(size + 2, arrayOf(element1, element2, null, null, null))
+            1 -> Buffer(size + 2, arrayOf(es[0], element1, element2, null, null))
+            2 -> Buffer(size + 2, arrayOf(es[0], es[1], element1, element2, null))
+            else -> Buffer(size + 2, arrayOf(es[0], es[1], es[2], element1, element2))
         }
     }
 
     fun removeFirst(): Buffer {
-        return Buffer(size - 1, e2, e3, e4, e5, null)
+        return Buffer(size - 1, arrayOf(es[1], es[2], es[3], es[4], null))
     }
 
     fun removeFirstTwo(): Buffer {
-        return Buffer(size - 2, e3, e4, e5, null, null)
+        return Buffer(size - 2, arrayOf(es[2], es[3], es[4], null, null))
     }
 
     fun removeLast(): Buffer {
         return when (size) {
-            1 -> Buffer(size - 1, null, e2, e3, e4, e5)
-            2 -> Buffer(size - 1, e1, null, e3, e4, e5)
-            3 -> Buffer(size - 1, e1, e2, null, e4, e5)
-            4 -> Buffer(size - 1, e1, e2, e3, null, e5)
-            else -> Buffer(size - 1, e1, e2, e3, e4, null)
+            1 -> empty
+            2 -> Buffer(size - 1, arrayOf(es[0], null, null, null, null))
+            3 -> Buffer(size - 1, arrayOf(es[0], es[1], null, null, null))
+            4 -> Buffer(size - 1, arrayOf(es[0], es[1], es[2], null, null))
+            else -> Buffer(size - 1, arrayOf(es[0], es[1], es[2], es[3], null))
         }
     }
 
     fun removeLastTwo(): Buffer {
         return when (size) {
-            2 -> Buffer(size - 2, null, null, e3, e4, e5)
-            3 -> Buffer(size - 2, e1, null, null, e4, e5)
-            4 -> Buffer(size - 2, e1, e2, null, null, e5)
-            else -> Buffer(size - 2, e1, e2, e3, null, null)
+            2 -> empty
+            3 -> Buffer(size - 2, arrayOf(es[0], null, null, null, null))
+            4 -> Buffer(size - 2, arrayOf(es[0], es[1], null, null, null))
+            else -> Buffer(size - 2, arrayOf(es[0], es[1], es[2], null, null))
         }
     }
 
     fun addElementsTo(l: ArrayList<Any?>) {
-        if (size >= 1) {
-            l.add(e1)
-        }
-        if (size >= 2) {
-            l.add(e2)
-        }
-        if (size >= 3) {
-            l.add(e3)
-        }
-        if (size >= 4) {
-            l.add(e4)
-        }
-        if (size >= 5) {
-            l.add(e5)
+        for (index in 0 until size) {
+            l.add(es[index])
         }
     }
 
     fun addFirstPairOfLastTwoElementsTo(buffer: Buffer): Buffer {
         return when (size) {
-            2 -> buffer.addFirst(Pair(e1, e2))
-            3 -> buffer.addFirst(Pair(e2, e3))
-            4 -> buffer.addFirst(Pair(e3, e4))
-            else -> buffer.addFirst(Pair(e4, e5))
+            2 -> buffer.addFirst(Pair(es[0], es[1]))
+            3 -> buffer.addFirst(Pair(es[1], es[2]))
+            4 -> buffer.addFirst(Pair(es[2], es[3]))
+            else -> buffer.addFirst(Pair(es[3], es[4]))
         }
     }
 
     fun addLastPairOfFirstTwoElementsTo(buffer: Buffer): Buffer {
-        return buffer.addLast(Pair(e1, e2))
+        return buffer.addLast(Pair(es[0], es[1]))
     }
 
     companion object InstanceHolder {
-        val empty = Buffer(0, null, null, null, null, null)
+        val empty = Buffer(0, arrayOf(null, null, null, null, null))
     }
 }
