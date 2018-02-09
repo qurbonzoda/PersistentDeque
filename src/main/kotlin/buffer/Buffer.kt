@@ -1,11 +1,15 @@
 package buffer
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 const val RED = 0
 const val YELLOW = 1
 const val GREEN = 2
 
 
 class Buffer private constructor(val size: Int, private val es: Array<Any?>) {
+    private var isExclusive = AtomicBoolean(true)
+
     val isEmpty: Boolean = size == 0
 
     val color: Int = when (size) {
@@ -27,6 +31,10 @@ class Buffer private constructor(val size: Int, private val es: Array<Any?>) {
     }
 
     fun addLast(element: Any?): Buffer {
+        if (isExclusive.compareAndSet(true, false)) {
+            es[size] = element
+            return Buffer(size + 1, es)
+        }
         return when (size) {
             0 -> Buffer(size + 1, arrayOf(element, null, null, null, null))
             1 -> Buffer(size + 1, arrayOf(es[0], element, null, null, null))
@@ -37,6 +45,11 @@ class Buffer private constructor(val size: Int, private val es: Array<Any?>) {
     }
 
     fun addLastTwo(element1: Any?, element2: Any?): Buffer {
+        if (isExclusive.compareAndSet(true, false)) {
+            es[size] = element1
+            es[size + 1] = element2
+            return Buffer(size + 2, es)
+        }
         return when (size) {
             0 -> Buffer(size + 2, arrayOf(element1, element2, null, null, null))
             1 -> Buffer(size + 2, arrayOf(es[0], element1, element2, null, null))
