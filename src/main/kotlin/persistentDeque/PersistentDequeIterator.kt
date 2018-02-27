@@ -14,7 +14,7 @@ internal class PersistentDequeIterator<out T>(
     init {
 //        assert(index in 0..size)
 
-        val rhsBuffers = ArrayList<Buffer>()
+        val rhsBuffers = ArrayList<ImmutableBuffer>()
 
         val trees = ArrayList<Any?>()
         val depths = ArrayList<Int>()
@@ -22,14 +22,12 @@ internal class PersistentDequeIterator<out T>(
         var depth = 0
 
         while (levelIterator.hasNext()) {
-            val lhs = levelIterator.topLhs()
-            val rhs = levelIterator.topRhs()
-            levelIterator.next()
+            val level = levelIterator.next()
 
-            rhsBuffers.add(rhs)
+            rhsBuffers.add(level.rhs)
 
-            lhs.addElementsTo(trees)
-            addDepths(depths, lhs, depth)
+            level.lhs.addLeafValuesTo(trees, 0)
+            addDepths(depths, level.lhs, depth)
 
             depth += 1
         }
@@ -37,7 +35,7 @@ internal class PersistentDequeIterator<out T>(
         for (rhs in rhsBuffers) {
             depth -= 1
 
-            rhs.addElementsTo(trees)
+            rhs.addLeafValuesTo(trees, 0)
             addDepths(depths, rhs, depth)
         }
 
@@ -60,7 +58,7 @@ internal class PersistentDequeIterator<out T>(
         }
     }
 
-    private fun addDepths(list: ArrayList<Int>, buffer: Buffer, depth: Int) {
+    private fun addDepths(list: ArrayList<Int>, buffer: ImmutableBuffer, depth: Int) {
         repeat(times = buffer.size) {
             list.add(depth)
         }

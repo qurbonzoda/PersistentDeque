@@ -5,7 +5,7 @@ internal class PerfectBinaryTreeIterator<out T>(
 ): ListIterator<T> {
 
     private val size = 1 shl depth
-    private val path = ArrayList<Any?>(depth)
+    private val path = ArrayList<Any?>(depth + 1)
     private var isInRightEdge: Boolean = index == size
 
     init {
