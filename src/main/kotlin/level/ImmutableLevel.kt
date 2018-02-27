@@ -15,7 +15,7 @@ internal interface ImmutableLevel {
     fun withNewRhs(newRhs: ImmutableBuffer): ImmutableLevel
 
     // leaky abstraction
-    fun size(depth: Int): Int
+    fun size(depth: Int): Int   // TODO: subStackSize(depth: Int)
     fun subStackHeight(): Int
     fun addBufferLeafValuesTo(list: MutableList<Any?>, depth: Int)
     fun getBufferLeafValueAt(index: Int, size: Int, depth: Int): Any?
@@ -67,8 +67,8 @@ internal interface ImmutableLevel {
             upperRhs = upperRhs.prependSavingOrder(thisRhsTop)
             thisRhs = thisRhs.pop(1)
         } else if (upperRhs.size == YELLOW_HIGH) {
-            thisRhs = upperRhs.pop(upperRhs.size - 1).pushAllToNextLevelBuffer(thisRhs)
-            upperRhs = upperRhs.removeBottom(1)
+            thisRhs = upperRhs.pop(upperRhs.size - 2).pushAllToNextLevelBuffer(thisRhs)
+            upperRhs = upperRhs.removeBottom(2)
         }
 
         val canPushToThisLhs = MAX_BUFFER_SIZE - thisLhs.size
@@ -82,15 +82,15 @@ internal interface ImmutableLevel {
     }
 
     fun <T> makeGreenUpperLevelPushingRhs(upper: ImmutableLevel,
-                                          lhs: ImmutableBuffer,
-                                          rhs: ImmutableBuffer,
+                                          currentLhs: ImmutableBuffer,
+                                          currentRhs: ImmutableBuffer,
                                           valueToPush: Any?,
                                           lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
         var upperLhs = upper.lhs
         var upperRhs = upper.rhs
 
-        var thisLhs = lhs
-        var thisRhs = rhs
+        var thisLhs = currentLhs
+        var thisRhs = currentRhs
 
         assert(upperRhs.size == YELLOW_HIGH)
         assert(upperLhs.color != RED)
@@ -98,10 +98,10 @@ internal interface ImmutableLevel {
         if (upperLhs.size == YELLOW_LOW) {
             val thisLhsTop = thisLhs.moveToUpperLevelBuffer(1)
             upperLhs = upperLhs.prependSavingOrder(thisLhsTop)
-            thisLhs = upperLhs.pop(1)
+            thisLhs = thisLhs.pop(1)
         } else if (upperLhs.size == YELLOW_HIGH) {
-            thisLhs = upperLhs.pop(upperLhs.size - 1).pushAllToNextLevelBuffer(thisLhs)
-            upperLhs = upperLhs.removeBottom(1)
+            thisLhs = upperLhs.pop(upperLhs.size - 2).pushAllToNextLevelBuffer(thisLhs)
+            upperLhs = upperLhs.removeBottom(2)
         }
 
         val canPushToThisRhs = MAX_BUFFER_SIZE - thisRhs.size
@@ -115,14 +115,14 @@ internal interface ImmutableLevel {
     }
 
     fun <T> makeGreenUpperLevelPoppingLhs(upper: ImmutableLevel,
-                                          lhs: ImmutableBuffer,
-                                          rhs: ImmutableBuffer,
+                                          currentLhs: ImmutableBuffer,
+                                          currentRhs: ImmutableBuffer,
                                           lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
         var upperLhs = upper.lhs.pop()
         var upperRhs = upper.rhs
 
-        var thisLhs = lhs
-        var thisRhs = rhs
+        var thisLhs = currentLhs
+        var thisRhs = currentRhs
 
         assert(upperLhs.size == RED_LOW)
         assert(upperRhs.color != RED)
@@ -132,8 +132,8 @@ internal interface ImmutableLevel {
             upperRhs = upperRhs.prependSavingOrder(thisRhsTop)
             thisRhs = thisRhs.pop(1)
         } else if (upperRhs.size == YELLOW_HIGH) {
-            thisRhs = upperRhs.pop(upperRhs.size - 1).pushAllToNextLevelBuffer(thisRhs)
-            upperRhs = upperRhs.removeBottom(1)
+            thisRhs = upperRhs.pop(upperRhs.size - 2).pushAllToNextLevelBuffer(thisRhs)
+            upperRhs = upperRhs.removeBottom(2)
         }
 
         val canPopFromThisLhs = thisLhs.size
@@ -161,10 +161,10 @@ internal interface ImmutableLevel {
         if (upperLhs.size == YELLOW_LOW) {
             val thisLhsTop = thisLhs.moveToUpperLevelBuffer(1)
             upperLhs = upperLhs.prependSavingOrder(thisLhsTop)
-            thisLhs = upperLhs.pop(1)
+            thisLhs = thisLhs.pop(1)
         } else if (upperLhs.size == YELLOW_HIGH) {
-            thisLhs = upperLhs.pop(upperLhs.size - 1).pushAllToNextLevelBuffer(thisLhs)
-            upperLhs = upperLhs.removeBottom(1)
+            thisLhs = upperLhs.pop(upperLhs.size - 2).pushAllToNextLevelBuffer(thisLhs)
+            upperLhs = upperLhs.removeBottom(2)
         }
 
         val canPopFromThisRhs = thisRhs.size
@@ -193,10 +193,10 @@ internal interface ImmutableLevel {
         if (upperLhs.size <= YELLOW_LOW) {
             val thisLhsTop = thisLhs.moveToUpperLevelBuffer(1)
             upperLhs = upperLhs.prependSavingOrder(thisLhsTop)
-            thisLhs = upperLhs.pop(1)
+            thisLhs = thisLhs.pop(1)
         } else if (upperLhs.size >= YELLOW_HIGH) {
-            thisLhs = upperLhs.pop(upperLhs.size - 1).pushAllToNextLevelBuffer(thisLhs)
-            upperLhs = upperLhs.removeBottom(1)
+            thisLhs = upperLhs.pop(upperLhs.size - 2).pushAllToNextLevelBuffer(thisLhs)
+            upperLhs = upperLhs.removeBottom(2)
         }
 
         if (upperRhs.size <= YELLOW_LOW) {
@@ -204,13 +204,18 @@ internal interface ImmutableLevel {
             upperRhs = upperRhs.prependSavingOrder(thisRhsTop)
             thisRhs = thisRhs.pop(1)
         } else if (upperRhs.size >= YELLOW_HIGH) {
-            thisRhs = upperRhs.pop(upperRhs.size - 1).pushAllToNextLevelBuffer(thisRhs)
-            upperRhs = upperRhs.removeBottom(1)
+            thisRhs = upperRhs.pop(upperRhs.size - 2).pushAllToNextLevelBuffer(thisRhs)
+            upperRhs = upperRhs.removeBottom(2)
         }
 
         assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
 
-        val newThis = SubStackBottomLevel(thisLhs, thisRhs)
+        if (lowerSubStack == null && thisLhs.size == 0 && thisRhs.size == 0) {
+            val newUpper = DequeBottomLevel<T>(upperLhs, upperRhs)
+            return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
+        }
+
+        val newThis = this.withNewLhs(thisLhs).withNewRhs(thisRhs)  // TODO: optimize
         val nextSubStack = if (newThis.color == RED) {
             val newUpper = SubStackBottomLevel(upperLhs, upperRhs)
             DequeSubStack(newUpper, DequeSubStack(newThis, lowerSubStack))

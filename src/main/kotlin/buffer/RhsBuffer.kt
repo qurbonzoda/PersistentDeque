@@ -16,16 +16,6 @@ internal class RhsBuffer<T>(top: Any?,
         this.addLeavesOfNode(this.top, list, depth)
     }
 
-    private fun addLeavesOfNode(node: Any?, list: MutableList<Any?>, height: Int) {
-        if (height == 0) {
-            list.add(node)
-            return
-        }
-        val pair = node as Pair<*, *>
-        this.addLeavesOfNode(pair.second, list, height - 1)
-        this.addLeavesOfNode(pair.first, list, height - 1)
-    }
-
     override fun getLeafValueAt(index: Int, depth: Int): Any? {
         assert(index < this.size shl depth)
 
@@ -60,7 +50,7 @@ internal class RhsBuffer<T>(top: Any?,
 
     override fun moveToUpperLevelBuffer(count: Int): ImmutableBuffer {
         if (count == 0) {
-            return RhsEmptyBuffer
+            return this.empty()
         }
         val result = this.next.moveToUpperLevelBuffer(count - 1)
         val pair = this.top as Pair<*, *>
@@ -92,7 +82,7 @@ internal class RhsBuffer<T>(top: Any?,
         }
 
     override fun addFirst(value: T): ImmutableDeque<T> {
-        val lhs = LhsEmptyBuffer.push(value)
+        val lhs = this.oppositeSideEmpty().push(value)
         return DequeBottomLevel(lhs, this)
     }
 
@@ -115,7 +105,7 @@ internal class RhsBuffer<T>(top: Any?,
     }
 
     override fun removeLast(): ImmutableDeque<T> {
-        return this.next
+        return this.pop() as ImmutableDeque<T>
     }
 
     override fun toList(): List<T> {

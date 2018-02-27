@@ -45,7 +45,7 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
 
         if (upper.lhs.size == YELLOW_LOW && thisLhs.size == 0) {
             thisLhs = thisRhs.moveToOppositeSideBuffer()
-            thisRhs = LhsEmptyBuffer
+            thisRhs = RhsEmptyBuffer
         }
 
         return this.makeGreenUpperLevelPushingRhs(upper, thisLhs, thisRhs, valueToPush, lowerSubStack)
@@ -104,7 +104,12 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
         assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
         assert(lowerSubStack == null)
 
+        if (thisLhs.size == 0 && thisRhs.size == 0) {
+            return DequeBottomLevel(upperLhs, upperRhs)
+        }
+
 //        assert(thisLhs.size > 0 && thisRhs.size > 0)
+        assert(thisLhs.size + thisRhs.size > 1)
 
         val newThis = DequeBottomLevel<T>(thisLhs, thisRhs)
         if (newThis.color == RED) {
@@ -144,10 +149,9 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
         }
 
         val toPushToNextLevel = (MAX_BUFFER_SIZE shr 2) shl 1   // make even number
-        val toLeaveForLhs = this.rhs.size - toPushToNextLevel
+        val toLeaveForLhs = this.lhs.size - toPushToNextLevel
 
-        val bufferToPush = this.lhs.pop(toLeaveForLhs)
-        val nextLevelLhs = bufferToPush.pushAllToNextLevelBuffer(LhsEmptyBuffer)
+        val nextLevelLhs = this.lhs.pop(toLeaveForLhs).pushAllToNextLevelBuffer(LhsEmptyBuffer)
         val newLhs = this.lhs.removeBottom(toPushToNextLevel).push(value)
 
         val nextLevel = DequeBottomLevel<T>(nextLevelLhs, RhsEmptyBuffer)
@@ -171,8 +175,7 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
         val toPushToNextLevel = (MAX_BUFFER_SIZE shr 2) shl 1   // make even number
         val toLeaveForRhs = this.rhs.size - toPushToNextLevel
 
-        val bufferToPush = this.rhs.pop(toLeaveForRhs)
-        val nextLevelRhs = bufferToPush.pushAllToNextLevelBuffer(RhsEmptyBuffer)
+        val nextLevelRhs = this.rhs.pop(toLeaveForRhs).pushAllToNextLevelBuffer(RhsEmptyBuffer)
         val newRhs = this.rhs.removeBottom(toPushToNextLevel).push(value)
 
         val nextLevel = DequeBottomLevel<T>(LhsEmptyBuffer, nextLevelRhs)

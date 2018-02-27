@@ -36,7 +36,7 @@ internal abstract class AbstractBuffer(override val top: Any?,
     }
 
     override fun removeBottomAndMoveRestToOppositeSideBuffer(): ImmutableBuffer {
-        var result = oppositeSideEmpty()
+        var result = this.oppositeSideEmpty()
 
         var buffer = this
         while (buffer.size > 1) {
@@ -58,6 +58,16 @@ internal abstract class AbstractBuffer(override val top: Any?,
     }
 
     // MARK: protected
+    fun addLeavesOfNode(node: Any?, list: MutableList<Any?>, height: Int) {
+        if (height == 0) {
+            list.add(node)
+            return
+        }
+        val pair = node as Pair<*, *>
+        this.addLeavesOfNode(pair.first, list, height - 1)
+        this.addLeavesOfNode(pair.second, list, height - 1)
+    }
+
     fun getLeafOfNodeAt(index: Int, node: Any?, depth: Int): Any? {
         if (depth == 0) {
             return node

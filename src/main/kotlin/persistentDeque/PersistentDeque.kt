@@ -2,6 +2,7 @@ package persistentDeque
 
 import buffer.*
 import deque.ImmutableDeque
+import level.DequeBottomLevel
 import level.ImmutableLevel
 import java.util.*
 
@@ -107,9 +108,13 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
         var lowerLevel = this.next.stack.next
         var lowerSubStack = this.next.next
         if (lowerLevel == null) {
-            // fuckin' wrong
-            lowerLevel = this.next.next!!.stack
-            lowerSubStack = this.next.next.next
+            lowerLevel = this.next.next?.stack
+            lowerSubStack = this.next.next?.next
+            if (lowerLevel == null) {   // upperLevel is DequeBottomLevel
+                assert(upperLevel.lhs.size == RED_HIGH || upperLevel.rhs.size == RED_HIGH)
+                assert(lowerSubStack == null)
+                lowerLevel = DequeBottomLevel<T>(LhsEmptyBuffer, RhsEmptyBuffer)
+            }
         }
 
         return lowerLevel.makeGreenUpperLevel(upperLevel, newTopSubStack, lowerSubStack)
