@@ -28,11 +28,11 @@ internal object RhsEmptyBuffer: ImmutableBufferDeque<Any?> {
     }
 
     override fun getLeafValueAt(index: Int, depth: Int): Any? {
-        throw UnsupportedOperationException()
+        throw IndexOutOfBoundsException()
     }
 
     override fun setLeafValueAt(index: Int, value: Any?, depth: Int): ImmutableBuffer {
-        throw UnsupportedOperationException()
+        throw IndexOutOfBoundsException()
     }
 
     override fun pushAllToNextLevelBuffer(nextLevelBuffer: ImmutableBuffer): ImmutableBuffer {
@@ -66,7 +66,7 @@ internal object RhsEmptyBuffer: ImmutableBufferDeque<Any?> {
     }
 
     override fun removeFirst(): ImmutableDeque<Any?> {
-        throw UnsupportedOperationException()
+        throw NoSuchElementException()
     }
 
     override fun addLast(value: Any?): ImmutableDeque<Any?> {
@@ -74,7 +74,7 @@ internal object RhsEmptyBuffer: ImmutableBufferDeque<Any?> {
     }
 
     override fun removeLast(): ImmutableDeque<Any?> {
-        throw UnsupportedOperationException()
+        throw NoSuchElementException()
     }
 
     override fun toList(): List<Any?> {
@@ -82,10 +82,10 @@ internal object RhsEmptyBuffer: ImmutableBufferDeque<Any?> {
     }
 
     override fun get(index: Int): Any? {
-        throw UnsupportedOperationException()
+        throw IndexOutOfBoundsException()
     }
 
     override fun set(index: Int, value: Any?): ImmutableDeque<Any?> {
-        throw UnsupportedOperationException()
+        throw IndexOutOfBoundsException()
     }
 }

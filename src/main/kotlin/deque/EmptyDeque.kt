@@ -14,7 +14,7 @@ internal object EmptyDeque: ImmutableDeque<Any?> {
     }
 
     override fun removeFirst(): ImmutableDeque<Any?> {
-        throw UnsupportedOperationException()
+        throw NoSuchElementException()
     }
 
     override fun addLast(value: Any?): ImmutableDeque<Any?> {
@@ -22,7 +22,7 @@ internal object EmptyDeque: ImmutableDeque<Any?> {
     }
 
     override fun removeLast(): ImmutableDeque<Any?> {
-        throw UnsupportedOperationException()
+        throw NoSuchElementException()
     }
 
     override fun toList(): List<Any?> {
@@ -30,10 +30,10 @@ internal object EmptyDeque: ImmutableDeque<Any?> {
     }
 
     override fun get(index: Int): Any? {
-        throw UnsupportedOperationException()
+        throw IndexOutOfBoundsException()
     }
 
     override fun set(index: Int, value: Any?): ImmutableDeque<Any?> {
-        throw UnsupportedOperationException()
+        throw IndexOutOfBoundsException()
     }
 }
