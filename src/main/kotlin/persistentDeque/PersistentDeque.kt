@@ -112,7 +112,22 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
             lowerSubStack = this.next.next?.next
             if (lowerLevel == null) {   // upperLevel is DequeBottomLevel
                 assert(upperLevel.lhs.size == RED_HIGH || upperLevel.rhs.size == RED_HIGH)
+                assert(upperLevel is DequeBottomLevel<*>)
                 assert(lowerSubStack == null)
+                if (upperLevel.lhs.size == RED_HIGH && upperLevel.rhs.size + 2 < YELLOW_HIGH) {
+                    val fromLhs = upperLevel.lhs.pop(upperLevel.lhs.size - 2).moveToOppositeSideBuffer()
+                    val newRhs = upperLevel.rhs.prependSavingOrder(fromLhs)
+                    val newLhs = upperLevel.lhs.removeBottom(2)
+                    val newUpperLevel = DequeBottomLevel<T>(newLhs, newRhs)
+                    return PersistentDeque(newTopSubStack, DequeSubStack(newUpperLevel, null))
+                } else if (upperLevel.rhs.size == RED_HIGH && upperLevel.lhs.size + 2 < YELLOW_HIGH) {
+                    val fromRhs = upperLevel.rhs.pop(upperLevel.rhs.size - 2).moveToOppositeSideBuffer()
+                    val newLhs = upperLevel.lhs.prependSavingOrder(fromRhs)
+                    val newRhs = upperLevel.rhs.removeBottom(2)
+                    val newUpperLevel = DequeBottomLevel<T>(newLhs, newRhs)
+                    return PersistentDeque(newTopSubStack, DequeSubStack(newUpperLevel, null))
+                }
+
                 lowerLevel = DequeBottomLevel<T>(LhsEmptyBuffer, RhsEmptyBuffer)
             }
         }
