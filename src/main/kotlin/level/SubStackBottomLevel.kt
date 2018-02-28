@@ -31,7 +31,7 @@ internal open class SubStackBottomLevel(override val lhs: ImmutableBuffer,
     }
 
     override fun subStackHeight(): Int {
-        return 0
+        return 1
     }
 
     override fun addBufferLeafValuesTo(list: MutableList<Any?>, depth: Int) {
