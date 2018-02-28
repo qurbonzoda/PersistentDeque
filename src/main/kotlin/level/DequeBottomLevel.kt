@@ -148,14 +148,29 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
             return this.withNewLhs(newLhs)
         }
 
+        val canMoveToRhs = YELLOW_HIGH - this.rhs.size
+
+        if (canMoveToRhs > 0) { // TODO: consider finding optimal value
+            val toLeaveForLhs = this.lhs.size - canMoveToRhs
+            val fromLhs = this.lhs.pop(toLeaveForLhs).moveToOppositeSideBuffer()
+            val newRhs = this.rhs.prependSavingOrder(fromLhs)
+            val newLhs = this.lhs.removeBottom(canMoveToRhs).push(value)
+            return DequeBottomLevel(newLhs, newRhs)
+        }
+
         val toPushToNextLevel = (MAX_BUFFER_SIZE shr 2) shl 1   // make even number
         val toLeaveForLhs = this.lhs.size - toPushToNextLevel
+        val toLeaveForRhs = this.rhs.size - toPushToNextLevel
 
         val nextLevelLhs = this.lhs.pop(toLeaveForLhs).pushAllToNextLevelBuffer(LhsEmptyBuffer)
+        val nextLevelRhs = this.rhs.pop(toLeaveForRhs).pushAllToNextLevelBuffer(RhsEmptyBuffer)
         val newLhs = this.lhs.removeBottom(toPushToNextLevel).push(value)
+        val newRhs = this.rhs.removeBottom(toPushToNextLevel)
 
-        val nextLevel = DequeBottomLevel<T>(nextLevelLhs, RhsEmptyBuffer)
-        return NonBottomLevel(newLhs, this.rhs, nextLevel)
+        assert(newLhs.color == GREEN && newRhs.color == GREEN)
+
+        val nextLevel = DequeBottomLevel<T>(nextLevelLhs, nextLevelRhs)
+        return NonBottomLevel(newLhs, newRhs, nextLevel)
     }
 
     override fun removeFirst(): ImmutableDeque<T> {
@@ -172,14 +187,30 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
             return this.withNewRhs(newRhs)
         }
 
+        val canMoveToLhs = YELLOW_HIGH - this.lhs.size
+
+        if (canMoveToLhs > 0) { // TODO: consider finding optimal value
+            val toLeaveForRhs = this.rhs.size - canMoveToLhs
+            val fromRhs = this.rhs.pop(toLeaveForRhs).moveToOppositeSideBuffer()
+            val newLhs = this.lhs.prependSavingOrder(fromRhs)
+            val newRhs = this.rhs.removeBottom(canMoveToLhs).push(value)
+            return DequeBottomLevel(newLhs, newRhs)
+
+        }
+
         val toPushToNextLevel = (MAX_BUFFER_SIZE shr 2) shl 1   // make even number
         val toLeaveForRhs = this.rhs.size - toPushToNextLevel
+        val toLeaveForLhs = this.lhs.size - toPushToNextLevel
 
         val nextLevelRhs = this.rhs.pop(toLeaveForRhs).pushAllToNextLevelBuffer(RhsEmptyBuffer)
+        val nextLevelLhs = this.lhs.pop(toLeaveForLhs).pushAllToNextLevelBuffer(LhsEmptyBuffer)
         val newRhs = this.rhs.removeBottom(toPushToNextLevel).push(value)
+        val newLhs = this.lhs.removeBottom(toPushToNextLevel)
 
-        val nextLevel = DequeBottomLevel<T>(LhsEmptyBuffer, nextLevelRhs)
-        return NonBottomLevel(this.lhs, newRhs, nextLevel)
+        assert(newLhs.color == GREEN && newRhs.color == GREEN)
+
+        val nextLevel = DequeBottomLevel<T>(nextLevelLhs, nextLevelRhs)
+        return NonBottomLevel(newLhs, newRhs, nextLevel)
     }
 
     override fun removeLast(): ImmutableDeque<T> {
