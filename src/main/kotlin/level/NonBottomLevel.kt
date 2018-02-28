@@ -82,7 +82,11 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
         }
 
         val newUpper = NonBottomLevel<T>(upperLhs, upperRhs, newThis)
-        return PersistentDeque(newUpper, lowerSubStack!!)   // wrong -> if (lowerSubStack == null) return newUpper
+        if (lowerSubStack == null) {
+            return newUpper
+        }
+
+        return PersistentDeque(newUpper, lowerSubStack)
     }
 
     // MARK: ImmutableDeque
