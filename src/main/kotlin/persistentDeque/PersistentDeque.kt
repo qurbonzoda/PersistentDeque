@@ -139,17 +139,25 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
     }
 
     override fun toList(): List<T> {
-        val list = mutableListOf<Any?>()
-        this.topSubStack.addBufferLeafValuesTo(list, 0)
-        var depth = this.topSubStack.subStackHeight()
+        val lhsList = mutableListOf<Any?>()
+        val rhsList = mutableListOf<Any?>()
 
-        var subStack: DequeSubStack? = this.next
-        while (subStack != null) {
-            subStack.stack.addBufferLeafValuesTo(list, depth)
-            depth += subStack.stack.subStackHeight()
-            subStack = subStack.next
+        var depth = 0
+
+        val iterator = LevelIterator(this.topSubStack, this.next)
+        while (iterator.hasNext()) {
+            val level = iterator.next()
+            level.lhs.addLeafValuesTo(lhsList, depth)
+
+            val list = mutableListOf<Any?>()
+            level.rhs.addLeafValuesTo(list, depth)
+
+            rhsList.addAll(list.reversed())
+
+            depth += 1
         }
-        return list.toList() as List<T>
+
+        return (lhsList + rhsList.reversed()) as List<T>
     }
 
     override fun get(index: Int): T {
