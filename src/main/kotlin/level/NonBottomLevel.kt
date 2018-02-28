@@ -22,8 +22,8 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
         return NonBottomLevel(this.lhs, newRhs, this.next)
     }
 
-    override fun size(depth: Int): Int {
-        return ((this.lhs.size + this.rhs.size) shl depth) + this.next.size(depth + 1)
+    override fun subStackSize(depth: Int): Int {
+        return ((this.lhs.size + this.rhs.size) shl depth) + this.next.subStackSize(depth + 1)
     }
 
     override fun subStackHeight(): Int {
@@ -37,7 +37,7 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
     }
 
     override fun getBufferLeafValueAt(index: Int, size: Int, depth: Int): Any? {
-        assert(index < size && size == this.size(depth))
+        assert(index < size)
 
         val lhsSize = this.lhs.size shl depth
         val rhsSize = this.rhs.size shl depth
@@ -51,7 +51,7 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
     }
 
     override fun setBufferLeafValueAt(index: Int, value: Any?, size: Int, depth: Int): NonBottomLevel<T> {
-        assert(index < size && size == this.size(depth))
+        assert(index < size)
 
         val lhsSize = this.lhs.size shl depth
         val rhsSize = this.rhs.size shl depth
@@ -88,7 +88,7 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
     // MARK: ImmutableDeque
     override val size: Int
         get() {
-            return this.size(0)
+            return this.subStackSize(0)
         }
 
     override fun isEmpty(): Boolean {

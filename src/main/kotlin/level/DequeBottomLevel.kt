@@ -123,7 +123,7 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
     // MARK: ImmutableDeque
     override val size: Int
         get() {
-            return this.size(0)
+            return this.subStackSize(0)
         }
 
     override fun isEmpty(): Boolean {

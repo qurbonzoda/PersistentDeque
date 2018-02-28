@@ -15,7 +15,7 @@ internal interface ImmutableLevel {
     fun withNewRhs(newRhs: ImmutableBuffer): ImmutableLevel
 
     // leaky abstraction
-    fun size(depth: Int): Int   // TODO: subStackSize(depth: Int)
+    fun subStackSize(depth: Int): Int
     fun subStackHeight(): Int
     fun addBufferLeafValuesTo(list: MutableList<Any?>, depth: Int)
     fun getBufferLeafValueAt(index: Int, size: Int, depth: Int): Any?
@@ -146,14 +146,14 @@ internal interface ImmutableLevel {
     }
 
     fun <T> makeGreenUpperLevelPoppingRhs(upper: ImmutableLevel,
-                                          lhs: ImmutableBuffer,
-                                          rhs: ImmutableBuffer,
+                                          currentLhs: ImmutableBuffer,
+                                          currentRhs: ImmutableBuffer,
                                           lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
         var upperLhs = upper.lhs
         var upperRhs = upper.rhs.pop()
 
-        var thisLhs = lhs
-        var thisRhs = rhs
+        var thisLhs = currentLhs
+        var thisRhs = currentRhs
 
         assert(upperRhs.size == RED_LOW)
         assert(upperLhs.color != RED)
@@ -177,8 +177,8 @@ internal interface ImmutableLevel {
     }
 
     fun <T> makeGreenUpperLevel(upper: ImmutableLevel,
-                                lhs: ImmutableBuffer,
-                                rhs: ImmutableBuffer,
+                                currentLhs: ImmutableBuffer,
+                                currentRhs: ImmutableBuffer,
                                 topSubStack: ImmutableLevel,
                                 lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
         assert(upper.color == RED)
@@ -187,8 +187,8 @@ internal interface ImmutableLevel {
         var upperLhs = upper.lhs
         var upperRhs = upper.rhs
 
-        var thisLhs = lhs
-        var thisRhs = rhs
+        var thisLhs = currentLhs
+        var thisRhs = currentRhs
 
         if (upperLhs.size <= YELLOW_LOW) {
             val thisLhsTop = thisLhs.moveToUpperLevelBuffer(1)

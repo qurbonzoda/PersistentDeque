@@ -22,11 +22,11 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
     override val size: Int
         get() {
             var subStack: DequeSubStack? = this.next
-            var size = this.topSubStack.size(0)
+            var size = this.topSubStack.subStackSize(0)
             var depth = this.topSubStack.subStackHeight()
 
             while (subStack != null) {
-                size += subStack.stack.size(depth)
+                size += subStack.stack.subStackSize(depth)
                 depth += subStack.stack.subStackHeight()
                 subStack = subStack.next
             }
@@ -159,7 +159,7 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
         if (isValueAtIndexLocatedInSubStack(index, this.topSubStack, dequeSize, 0)) {
             return this.topSubStack.getBufferLeafValueAt(index, dequeSize, 0) as T
         }
-        dequeSize -= this.topSubStack.size(0)
+        dequeSize -= this.topSubStack.subStackSize(0)
         var depth = this.topSubStack.subStackHeight()
 
         var subStack: DequeSubStack? = this.next
@@ -167,7 +167,7 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
             if (isValueAtIndexLocatedInSubStack(index, subStack.stack, dequeSize, depth)) {
                 return subStack.stack.getBufferLeafValueAt(index, dequeSize, depth) as T
             }
-            dequeSize -= subStack.stack.size(depth)
+            dequeSize -= subStack.stack.subStackSize(depth)
             depth += subStack.stack.subStackHeight()
             subStack = subStack.next
         }
@@ -203,7 +203,7 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
             val newTopSubStack = this.topSubStack.setBufferLeafValueAt(index, value, dequeSize, 0)
             return PersistentDeque(newTopSubStack, this.next)
         }
-        dequeSize -= this.topSubStack.size(0)
+        dequeSize -= this.topSubStack.subStackSize(0)
         var depth = this.topSubStack.subStackHeight()
 
         val upperSubStacks = Stack<ImmutableLevel>()
@@ -219,7 +219,7 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
                 }
                 return PersistentDeque(this.topSubStack, newSubStack)
             }
-            dequeSize -= subStack.stack.size(depth)
+            dequeSize -= subStack.stack.subStackSize(depth)
             depth += subStack.stack.subStackHeight()
             upperSubStacks.push(subStack.stack)
             subStack = subStack.next

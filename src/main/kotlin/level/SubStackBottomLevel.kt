@@ -26,7 +26,7 @@ internal open class SubStackBottomLevel(override val lhs: ImmutableBuffer,
         return SubStackBottomLevel(this.lhs, newRhs)
     }
 
-    override fun size(depth: Int): Int {
+    override fun subStackSize(depth: Int): Int {
         return (this.lhs.size + this.rhs.size) shl depth
     }
 
@@ -40,7 +40,7 @@ internal open class SubStackBottomLevel(override val lhs: ImmutableBuffer,
     }
 
     override fun getBufferLeafValueAt(index: Int, size: Int, depth: Int): Any? {
-        assert(index < size && size == this.size(depth))
+        assert(index < size)
 
         val lhsSize = this.lhs.size shl depth
         if (index < lhsSize) {
@@ -50,7 +50,7 @@ internal open class SubStackBottomLevel(override val lhs: ImmutableBuffer,
     }
 
     override fun setBufferLeafValueAt(index: Int, value: Any?, size: Int, depth: Int): SubStackBottomLevel {
-        assert(index < size && size == this.size(depth))
+        assert(index < size)
 
         val lhsSize = this.lhs.size shl depth
         if (index < lhsSize) {
