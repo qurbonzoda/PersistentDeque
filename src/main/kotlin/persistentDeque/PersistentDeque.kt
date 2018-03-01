@@ -132,10 +132,6 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
             }
         }
 
-        if (lowerLevel.color == RED) {
-            println()
-        }
-
         val result: ImmutableDeque<T> = lowerLevel.makeGreenUpperLevel(upperLevel, newTopSubStack, lowerSubStack)
 //
 //        if (result is PersistentDeque) {
