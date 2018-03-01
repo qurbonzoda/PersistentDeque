@@ -10,7 +10,7 @@ internal object RhsEmptyBuffer: ImmutableBufferDeque<Any?> {
     override val size: Int = 0
 
     override fun push(value: Any?): ImmutableBuffer {
-        return RhsBuffer(value, 1, this)
+        return RhsBuffer<Any?>(value, 1, this)
     }
 
     override fun pop(count: Int): ImmutableBuffer {

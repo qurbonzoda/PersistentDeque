@@ -5,7 +5,7 @@ import level.DequeBottomLevel
 
 internal class RhsBuffer<T>(top: Any?,
                             size: Int,
-                            override val next: ImmutableBufferDeque<T>): AbstractBuffer(top, size, next), ImmutableBufferDeque<T> {
+                            next: ImmutableBuffer): AbstractBuffer(top, size, next), ImmutableBufferDeque<T> {
     // MARK: ImmutableBuffer
     override fun push(value: Any?): RhsBuffer<T> {
         return RhsBuffer(value, this.size + 1, this)
@@ -43,7 +43,7 @@ internal class RhsBuffer<T>(top: Any?,
     override fun pushAllToNextLevelBuffer(nextLevelBuffer: ImmutableBuffer): ImmutableBuffer {
         assert(this.size % 2 == 0)
 
-        val result = (this.next as RhsBuffer).next.pushAllToNextLevelBuffer(nextLevelBuffer)
+        val result = (this.next as RhsBuffer<*>).next.pushAllToNextLevelBuffer(nextLevelBuffer)
         val pair = Pair(this.next.top, this.top)
         return result.push(pair)
     }

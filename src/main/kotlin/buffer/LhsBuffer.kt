@@ -5,7 +5,7 @@ import level.DequeBottomLevel
 
 internal class LhsBuffer<T>(top: Any?,
                             size: Int,
-                            override val next: ImmutableBufferDeque<T>): AbstractBuffer(top, size, next), ImmutableBufferDeque<T> {
+                            next: ImmutableBuffer): AbstractBuffer(top, size, next), ImmutableBufferDeque<T> {
     // MARK: ImmutableBuffer
     override fun push(value: Any?): LhsBuffer<T> {
         return LhsBuffer(value, this.size + 1, this)
@@ -43,7 +43,7 @@ internal class LhsBuffer<T>(top: Any?,
     override fun pushAllToNextLevelBuffer(nextLevelBuffer: ImmutableBuffer): ImmutableBuffer {
         assert(this.size % 2 == 0)
 
-        val result = (this.next as LhsBuffer).next.pushAllToNextLevelBuffer(nextLevelBuffer)
+        val result = (this.next as LhsBuffer<*>).next.pushAllToNextLevelBuffer(nextLevelBuffer)
         val pair = Pair(this.top, this.next.top)
         return result.push(pair)
     }
