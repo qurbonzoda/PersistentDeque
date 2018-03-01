@@ -132,7 +132,17 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
             }
         }
 
-        return lowerLevel.makeGreenUpperLevel(upperLevel, newTopSubStack, lowerSubStack)
+        if (lowerLevel.color == RED) {
+            println()
+        }
+
+        val result: ImmutableDeque<T> = lowerLevel.makeGreenUpperLevel(upperLevel, newTopSubStack, lowerSubStack)
+
+        if (result is PersistentDeque) {
+            result.checkInvariants()
+        }
+
+        return result
     }
 
     private fun makeGreenTopSubStackTopPerforming(operation: Int, value: T?): ImmutableDeque<T> {
@@ -144,13 +154,17 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
             lowerSubStack = this.next.next
         }
 
-        return when(operation) {
+        val result: ImmutableDeque<T> = when(operation) {
             PUSH_TO_LHS ->  lowerLevel.makeGreenUpperLevelPushingLhs(upperLevel, value, lowerSubStack)
             POP_FROM_LHS -> lowerLevel.makeGreenUpperLevelPoppingLhs(upperLevel, lowerSubStack)
             PUSH_TO_RHS ->  lowerLevel.makeGreenUpperLevelPushingRhs(upperLevel, value, lowerSubStack)
             POP_FROM_RHS -> lowerLevel.makeGreenUpperLevelPoppingRhs(upperLevel, lowerSubStack)
             else ->         throw AssertionError("Unreachable")
         }
+        if (result is PersistentDeque) {
+            result.checkInvariants()
+        }
+        return result
     }
 
     override fun toList(): List<T> {
@@ -178,73 +192,74 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
     override fun get(index: Int): T {
         if (index < 0 || index >= this.size) throw IndexOutOfBoundsException()
 
-        var dequeSize = this.size
-        if (isValueAtIndexLocatedInSubStack(index, this.topSubStack, dequeSize, 0)) {
-            return this.topSubStack.getBufferLeafValueAt(index, dequeSize, 0) as T
-        }
-        dequeSize -= this.topSubStack.subStackSize(0)
-        var depth = this.topSubStack.subStackHeight()
+        var depth = 0
+        var lhsIndex = index
+        var rhsIndex = this.size - index - 1
 
-        var subStack: DequeSubStack? = this.next
-        while (subStack != null) {
-            if (isValueAtIndexLocatedInSubStack(index, subStack.stack, dequeSize, depth)) {
-                return subStack.stack.getBufferLeafValueAt(index, dequeSize, depth) as T
+        val levelIterator = LevelIterator(this.topSubStack, this.next)
+
+        while (levelIterator.hasNext()) {
+            val level = levelIterator.next()
+            val lhsSize = level.lhs.size shl depth
+            val rhsSize = level.rhs.size shl depth
+
+            if (lhsIndex < lhsSize) {
+                return level.lhs.getLeafValueAt(lhsIndex, depth) as T
             }
-            dequeSize -= subStack.stack.subStackSize(depth)
-            depth += subStack.stack.subStackHeight()
-            subStack = subStack.next
+            if (rhsIndex < rhsSize) {
+                return level.rhs.getLeafValueAt(rhsSize - rhsIndex - 1, depth) as T
+            }
+
+            depth += 1
+            lhsIndex -= lhsSize
+            rhsIndex -= rhsSize
         }
 
         throw AssertionError("Unreachable")
     }
 
-    private fun isValueAtIndexLocatedInSubStack(index: Int, subStack: ImmutableLevel, dequeSize: Int, depth: Int): Boolean {
-        var level: ImmutableLevel? = subStack
-        var levelDepth = depth
-        var subStackSize = dequeSize
-
-        while (level != null) {
-            val lhsSize = level.lhs.size shl levelDepth
-            val rhsSize = level.rhs.size shl levelDepth
-            if (index < lhsSize || subStackSize - index <= rhsSize) {
-                return true
-            }
-
-            level = level.next
-            levelDepth += 1
-            subStackSize -= lhsSize + rhsSize
-        }
-        return false
-    }
-
     override fun set(index: Int, value: T): ImmutableDeque<T> {
         if (index < 0 || index >= this.size) throw IndexOutOfBoundsException()
 
-
+        var depth = 0
         var dequeSize = this.size
-        if (isValueAtIndexLocatedInSubStack(index, this.topSubStack, dequeSize, 0)) {
-            val newTopSubStack = this.topSubStack.setBufferLeafValueAt(index, value, dequeSize, 0)
-            return PersistentDeque(newTopSubStack, this.next)
-        }
-        dequeSize -= this.topSubStack.subStackSize(0)
-        var depth = this.topSubStack.subStackHeight()
+        var lhsIndex = index
+        var rhsIndex = dequeSize - index - 1
 
         val upperSubStacks = Stack<ImmutableLevel>()
+        var subStack: DequeSubStack? = DequeSubStack(this.topSubStack, this.next)
 
-        var subStack: DequeSubStack? = this.next
         while (subStack != null) {
-            if (isValueAtIndexLocatedInSubStack(index, subStack.stack, dequeSize, depth)) {
-                val newStack = subStack.stack.setBufferLeafValueAt(index, value, dequeSize, 0)
-                var newSubStack = DequeSubStack(newStack, subStack.next)
 
-                while (!upperSubStacks.isEmpty()) {
-                    newSubStack = DequeSubStack(upperSubStacks.pop(), newSubStack)
+            var level: ImmutableLevel? = subStack.stack
+            var subStackSize = 0
+            val subStackIndex = lhsIndex
+            val subStackDepth = depth
+
+            while (level != null) {
+                val lhsSize = level.lhs.size shl depth
+                val rhsSize = level.rhs.size shl depth
+
+                if (lhsIndex < lhsSize || rhsIndex < rhsSize) {
+                    val newStack = subStack.stack.setBufferLeafValueAt(subStackIndex, value, dequeSize, subStackDepth)
+                    var newSubStack = DequeSubStack(newStack, subStack.next)
+
+                    while (!upperSubStacks.isEmpty()) {
+                        newSubStack = DequeSubStack(upperSubStacks.pop(), newSubStack)
+                    }
+                    return PersistentDeque(newSubStack.stack, newSubStack.next!!)
                 }
-                return PersistentDeque(this.topSubStack, newSubStack)
+
+                depth += 1
+                lhsIndex -= lhsSize
+                rhsIndex -= rhsSize
+                subStackSize += lhsSize + rhsSize
+
+                level = level.next
             }
-            dequeSize -= subStack.stack.subStackSize(depth)
-            depth += subStack.stack.subStackHeight()
+
             upperSubStacks.push(subStack.stack)
+            dequeSize -= subStackSize
             subStack = subStack.next
         }
 
@@ -258,5 +273,42 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
 
     fun listIterator(): ListIterator<T> {
         return this.listIterator(0)
+    }
+
+    private fun checkInvariants() {
+        var topSubStack = this.topSubStack
+        var next: DequeSubStack? = this.next
+
+        var isCurrentLevelTopLevel = true
+
+        while (next != null) {
+            val colorOfCurrentLevel = topSubStack.color
+            val colorOfNextTopLevel = next.stack.color
+
+            if (isCurrentLevelTopLevel && colorOfCurrentLevel == RED) {
+                throw IllegalStateException()
+            }
+            if (isCurrentLevelTopLevel
+                    && colorOfCurrentLevel == YELLOW
+                    && colorOfNextTopLevel != GREEN) {
+                throw IllegalStateException()
+            }
+            if (colorOfNextTopLevel == YELLOW) {
+                throw IllegalStateException()
+            }
+            if (!isCurrentLevelTopLevel
+                    && colorOfCurrentLevel != GREEN
+                    && colorOfNextTopLevel != GREEN) {
+                throw IllegalStateException()
+            }
+
+            if (colorOfNextTopLevel != GREEN && colorOfNextTopLevel != RED) {
+                throw IllegalStateException()
+            }
+
+            isCurrentLevelTopLevel = false
+            topSubStack = next.stack
+            next = next.next
+        }
     }
 }

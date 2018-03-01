@@ -89,6 +89,26 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
         return PersistentDeque(newUpper, lowerSubStack)
     }
 
+    override fun <T> makeImmutableDeque(topSubStack: ImmutableLevel,
+                                        upperLhs: ImmutableBuffer,
+                                        upperRhs: ImmutableBuffer,
+                                        thisLhs: ImmutableBuffer,
+                                        thisRhs: ImmutableBuffer,
+                                        lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
+        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
+
+        val newThis = NonBottomLevel<T>(thisLhs, thisRhs, this.next)
+        val nextSubStack = if (newThis.color == RED) {
+            val newUpper = SubStackBottomLevel(upperLhs, upperRhs)
+            DequeSubStack(newUpper, DequeSubStack(newThis, lowerSubStack))
+        } else {
+            val newUpper = NonBottomLevel<T>(upperLhs, upperRhs, newThis)
+            DequeSubStack(newUpper, lowerSubStack)
+        }
+
+        return PersistentDeque(topSubStack, nextSubStack)
+    }
+
     // MARK: ImmutableDeque
     override val size: Int
         get() {

@@ -27,16 +27,16 @@ internal class RhsBuffer<T>(top: Any?,
         return this.next.getLeafValueAt(index, depth)
     }
 
-    override fun setLeafValueAt(index: Int, value: Any?, depth: Int): LhsBuffer<T> {
+    override fun setLeafValueAt(index: Int, value: Any?, depth: Int): RhsBuffer<T> {
         assert(index < this.size shl depth)
 
         val leavesAtNext = this.next.size shl depth
 
         if (index >= leavesAtNext) {
             val newTop = this.setLeafOfNodeAt(index - leavesAtNext, value, this.top, depth)
-            return LhsBuffer(newTop, this.size, this.next)
+            return RhsBuffer(newTop, this.size, this.next)
         }
-        val newNext = this.next.setLeafValueAt(index, value, depth) as LhsBuffer<T>
+        val newNext = this.next.setLeafValueAt(index, value, depth) as RhsBuffer<T>
         return newNext.push(this.top)
     }
 

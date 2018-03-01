@@ -75,9 +75,9 @@ internal abstract class AbstractBuffer(override val top: Any?,
         val pair = node as Pair<*, *>
         val lSize = 1 shl (depth - 1)
         if (index < lSize) {
-            return getLeafOfNodeAt(index, pair.first, depth - 1)
+            return this.getLeafOfNodeAt(index, pair.first, depth - 1)
         }
-        return getLeafOfNodeAt(index - lSize, pair.second, depth - 1)
+        return this.getLeafOfNodeAt(index - lSize, pair.second, depth - 1)
     }
 
     fun setLeafOfNodeAt(index: Int, value: Any?, node: Any?, depth: Int): Any? {
@@ -87,10 +87,10 @@ internal abstract class AbstractBuffer(override val top: Any?,
         val pair = node as Pair<*, *>
         val lSize = 1 shl (depth - 1)
         if (index < lSize) {
-            val newFirst = setLeafOfNodeAt(index, value, pair.first, depth - 1)
+            val newFirst = this.setLeafOfNodeAt(index, value, pair.first, depth - 1)
             return Pair(newFirst, pair.second)
         }
-        val newSecond = setLeafOfNodeAt(index - lSize, value, pair.second, depth - 1)
+        val newSecond = this.setLeafOfNodeAt(index - lSize, value, pair.second, depth - 1)
         return Pair(pair.first, newSecond)
     }
 
