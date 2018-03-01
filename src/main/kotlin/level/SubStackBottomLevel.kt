@@ -40,7 +40,7 @@ internal open class SubStackBottomLevel(override val lhs: ImmutableBuffer,
     }
 
     override fun getBufferLeafValueAt(index: Int, size: Int, depth: Int): Any? {
-        assert(index < size)
+//        assert(index < size)
 
         val lhsSize = this.lhs.size shl depth
         if (index < lhsSize) {
@@ -50,7 +50,7 @@ internal open class SubStackBottomLevel(override val lhs: ImmutableBuffer,
     }
 
     override fun setBufferLeafValueAt(index: Int, value: Any?, size: Int, depth: Int): SubStackBottomLevel {
-        assert(index < size)
+//        assert(index < size)
 
         val lhsSize = this.lhs.size shl depth
         if (index < lhsSize) {
@@ -68,8 +68,8 @@ internal open class SubStackBottomLevel(override val lhs: ImmutableBuffer,
                                         thisLhs: ImmutableBuffer,
                                         thisRhs: ImmutableBuffer,
                                         lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
-        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
-        assert(lowerSubStack != null)
+//        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
+//        assert(lowerSubStack != null)
 
         val newThis = SubStackBottomLevel(thisLhs, thisRhs)
         if (newThis.color == RED) {
@@ -87,8 +87,8 @@ internal open class SubStackBottomLevel(override val lhs: ImmutableBuffer,
                                         thisLhs: ImmutableBuffer,
                                         thisRhs: ImmutableBuffer,
                                         lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
-        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
-        assert(lowerSubStack != null)
+//        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
+//        assert(lowerSubStack != null)
 
         val newThis = SubStackBottomLevel(thisLhs, thisRhs)
         val nextSubStack = if (newThis.color == RED) {

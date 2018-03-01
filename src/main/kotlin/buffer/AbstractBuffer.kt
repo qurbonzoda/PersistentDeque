@@ -11,7 +11,7 @@ internal abstract class AbstractBuffer(override val top: Any?,
         }
 
     override fun pop(count: Int): ImmutableBuffer {
-        assert(count <= this.size)
+//        assert(count <= this.size)
 
         if (count == 0) {   // pop(count = 1) is very frequent invocation -> optimize
             return this
@@ -20,7 +20,7 @@ internal abstract class AbstractBuffer(override val top: Any?,
     }
 
     override fun removeBottom(count: Int): ImmutableBuffer {
-        assert(count > 0 && count <= this.size)
+//        assert(count > 0 && count <= this.size)
 
         if (this.size == count) {
             return this.empty()

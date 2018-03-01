@@ -28,8 +28,8 @@ internal interface ImmutableLevel {
         var thisLhs = this.lhs
         var thisRhs = this.rhs
 
-        assert(upperLhs.size == YELLOW_HIGH)
-        assert(upperRhs.color != RED)
+//        assert(upperLhs.size == YELLOW_HIGH)
+//        assert(upperRhs.color != RED)
 
         if (upperRhs.size == YELLOW_LOW) {
             val thisRhsTop = thisRhs.moveToUpperLevelBuffer(1)
@@ -59,8 +59,8 @@ internal interface ImmutableLevel {
         var thisLhs = this.lhs
         var thisRhs = this.rhs
 
-        assert(upperRhs.size == YELLOW_HIGH)
-        assert(upperLhs.color != RED)
+//        assert(upperRhs.size == YELLOW_HIGH)
+//        assert(upperLhs.color != RED)
 
         if (upperLhs.size == YELLOW_LOW) {
             val thisLhsTop = thisLhs.moveToUpperLevelBuffer(1)
@@ -90,8 +90,8 @@ internal interface ImmutableLevel {
         var thisLhs = this.lhs
         var thisRhs = this.rhs
 
-        assert(upperLhs.size == RED_LOW)
-        assert(upperRhs.color != RED)
+//        assert(upperLhs.size == RED_LOW)
+//        assert(upperRhs.color != RED)
 
         if (upperRhs.size == YELLOW_LOW) {
             val thisRhsTop = thisRhs.moveToUpperLevelBuffer(1)
@@ -120,8 +120,8 @@ internal interface ImmutableLevel {
         var thisLhs = this.lhs
         var thisRhs = this.rhs
 
-        assert(upperRhs.size == RED_LOW)
-        assert(upperLhs.color != RED)
+//        assert(upperRhs.size == RED_LOW)
+//        assert(upperLhs.color != RED)
 
         if (upperLhs.size == YELLOW_LOW) {
             val thisLhsTop = thisLhs.moveToUpperLevelBuffer(1)
@@ -144,8 +144,8 @@ internal interface ImmutableLevel {
     }
 
     fun <T> makeGreenUpperLevel(upper: ImmutableLevel, topSubStack: ImmutableLevel, lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
-        assert(upper.color == RED)
-        assert((this.color != RED) || (this.lhs.size == 0 && this.rhs.size == 0))
+//        assert(upper.color == RED)
+//        assert((this.color != RED) || (this.lhs.size == 0 && this.rhs.size == 0))
 
         var upperLhs = upper.lhs
         var upperRhs = upper.rhs

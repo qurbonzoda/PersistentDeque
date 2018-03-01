@@ -92,13 +92,13 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
     }
 
     private fun dequeWithYellowTopLevel(newTopSubStack: ImmutableLevel): ImmutableDeque<T> {
-        assert(newTopSubStack.color == YELLOW)
+//        assert(newTopSubStack.color == YELLOW)
 
         if (this.next.stack.color == GREEN) {
             return PersistentDeque(newTopSubStack, this.next)
         }
 
-        assert(this.next.stack.color == RED)
+//        assert(this.next.stack.color == RED)
 
         return this.makeGreenNextSubStackTop(newTopSubStack)
     }
@@ -111,9 +111,9 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
             lowerLevel = this.next.next?.stack
             lowerSubStack = this.next.next?.next
             if (lowerLevel == null) {   // upperLevel is DequeBottomLevel
-                assert(upperLevel.lhs.size == RED_HIGH || upperLevel.rhs.size == RED_HIGH)
-                assert(upperLevel is DequeBottomLevel<*>)
-                assert(lowerSubStack == null)
+//                assert(upperLevel.lhs.size == RED_HIGH || upperLevel.rhs.size == RED_HIGH)
+//                assert(upperLevel is DequeBottomLevel<*>)
+//                assert(lowerSubStack == null)
                 if (upperLevel.lhs.size == RED_HIGH && upperLevel.rhs.size + 2 < YELLOW_HIGH) {
                     val fromLhs = upperLevel.lhs.pop(upperLevel.lhs.size - 2).moveToOppositeSideBuffer()
                     val newRhs = upperLevel.rhs.prependSavingOrder(fromLhs)
@@ -137,10 +137,10 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
         }
 
         val result: ImmutableDeque<T> = lowerLevel.makeGreenUpperLevel(upperLevel, newTopSubStack, lowerSubStack)
-
-        if (result is PersistentDeque) {
-            result.checkInvariants()
-        }
+//
+//        if (result is PersistentDeque) {
+//            result.checkInvariants()
+//        }
 
         return result
     }
@@ -161,9 +161,9 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
             POP_FROM_RHS -> lowerLevel.makeGreenUpperLevelPoppingRhs(upperLevel, lowerSubStack)
             else ->         throw AssertionError("Unreachable")
         }
-        if (result is PersistentDeque) {
-            result.checkInvariants()
-        }
+//        if (result is PersistentDeque) {
+//            result.checkInvariants()
+//        }
         return result
     }
 
@@ -266,13 +266,9 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
         throw AssertionError("Unreachable")
     }
 
-    fun listIterator(index: Int): ListIterator<T> {
+    override fun listIterator(index: Int): ListIterator<T> {
         val levelIterator = LevelIterator(topSubStack, next)
         return PersistentDequeIterator(levelIterator, index, size)
-    }
-
-    fun listIterator(): ListIterator<T> {
-        return this.listIterator(0)
     }
 
     private fun checkInvariants() {

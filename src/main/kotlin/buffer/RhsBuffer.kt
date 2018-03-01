@@ -17,7 +17,7 @@ internal class RhsBuffer<T>(top: Any?,
     }
 
     override fun getLeafValueAt(index: Int, depth: Int): Any? {
-        assert(index < this.size shl depth)
+//        assert(index < this.size shl depth)
 
         val leavesAtNext = this.next.size shl depth
 
@@ -28,7 +28,7 @@ internal class RhsBuffer<T>(top: Any?,
     }
 
     override fun setLeafValueAt(index: Int, value: Any?, depth: Int): RhsBuffer<T> {
-        assert(index < this.size shl depth)
+//        assert(index < this.size shl depth)
 
         val leavesAtNext = this.next.size shl depth
 
@@ -41,7 +41,7 @@ internal class RhsBuffer<T>(top: Any?,
     }
 
     override fun pushAllToNextLevelBuffer(nextLevelBuffer: ImmutableBuffer): ImmutableBuffer {
-        assert(this.size % 2 == 0)
+//        assert(this.size % 2 == 0)
 
         val result = (this.next as RhsBuffer<*>).next.pushAllToNextLevelBuffer(nextLevelBuffer)
         val pair = Pair(this.next.top, this.top)
@@ -115,12 +115,12 @@ internal class RhsBuffer<T>(top: Any?,
     }
 
     override fun get(index: Int): T {
-        assert(index < this.size)
+//        assert(index < this.size)
         return this.getLeafValueAt(index, 0) as T
     }
 
     override fun set(index: Int, value: T): ImmutableDeque<T> {
-        assert(index < this.size)
+//        assert(index < this.size)
         return this.setLeafValueAt(index, value, 0)
     }
 }

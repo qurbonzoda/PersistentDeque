@@ -37,7 +37,7 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
     }
 
     override fun getBufferLeafValueAt(index: Int, size: Int, depth: Int): Any? {
-        assert(index < size)
+//        assert(index < size)
 
         val lhsSize = this.lhs.size shl depth
         val rhsSize = this.rhs.size shl depth
@@ -51,7 +51,7 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
     }
 
     override fun setBufferLeafValueAt(index: Int, value: Any?, size: Int, depth: Int): NonBottomLevel<T> {
-        assert(index < size)
+//        assert(index < size)
 
         val lhsSize = this.lhs.size shl depth
         val rhsSize = this.rhs.size shl depth
@@ -73,7 +73,7 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
                                         thisRhs: ImmutableBuffer,
                                         lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
 
-        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
+//        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
 
         val newThis = NonBottomLevel<T>(thisLhs, thisRhs, this.next)
         if (newThis.color == RED) {
@@ -95,7 +95,7 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
                                         thisLhs: ImmutableBuffer,
                                         thisRhs: ImmutableBuffer,
                                         lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
-        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
+//        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
 
         val newThis = NonBottomLevel<T>(thisLhs, thisRhs, this.next)
         val nextSubStack = if (newThis.color == RED) {
@@ -121,13 +121,13 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
 
     override val first: T
         get() {
-            assert(this.lhs.size != 0)
+//            assert(this.lhs.size != 0)
             return this.lhs.top as T
         }
 
     override val last: T
         get() {
-            assert(this.rhs.size != 0)
+//            assert(this.rhs.size != 0)
             return this.rhs.top as T
         }
 
@@ -174,12 +174,12 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
     }
 
     override fun get(index: Int): T {
-        assert(index < this.size)
+//        assert(index < this.size)
         return this.getBufferLeafValueAt(index, this.size, 0) as T
     }
 
     override fun set(index: Int, value: T): ImmutableDeque<T> {
-        assert(index < this.size)
+//        assert(index < this.size)
         return this.setBufferLeafValueAt(index, value, this.size, 0)
     }
 

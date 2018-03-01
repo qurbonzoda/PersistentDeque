@@ -14,12 +14,12 @@ internal object LhsEmptyBuffer: ImmutableBufferDeque<Any?> {
     }
 
     override fun pop(count: Int): ImmutableBuffer {
-        assert(count == 0)
+//        assert(count == 0)
         return this
     }
 
     override fun removeBottom(count: Int): ImmutableBuffer {
-        assert(count == 0)
+//        assert(count == 0)
         return this
     }
 
@@ -40,7 +40,7 @@ internal object LhsEmptyBuffer: ImmutableBufferDeque<Any?> {
     }
 
     override fun moveToUpperLevelBuffer(count: Int): ImmutableBuffer {
-        assert(count == 0)
+//        assert(count == 0)
         return this
     }
 
