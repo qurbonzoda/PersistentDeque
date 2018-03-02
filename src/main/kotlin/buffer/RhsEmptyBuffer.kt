@@ -2,25 +2,10 @@ package buffer
 
 import deque.ImmutableDeque
 
-internal object RhsEmptyBuffer: ImmutableBufferDeque<Any?> {
+internal object RhsEmptyBuffer: ImmutableBuffer(null, 0, RhsEmptyBuffer) {
     // MARK: ImmutableBuffer
-    override val top: Any?
-        get() = throw UnsupportedOperationException()
-    override val color: Int = RED
-    override val size: Int = 0
-
     override fun push(value: Any?): ImmutableBuffer {
-        return RhsBuffer<Any?>(value, 1, this)
-    }
-
-    override fun pop(count: Int): ImmutableBuffer {
-//        assert(count == 0)
-        return this
-    }
-
-    override fun removeBottom(count: Int): ImmutableBuffer {
-//        assert(count == 0)
-        return this
+        return RhsBuffer(value, 1, this)
     }
 
     override fun addLeafValuesTo(list: MutableList<Any?>, depth: Int) {
@@ -48,11 +33,11 @@ internal object RhsEmptyBuffer: ImmutableBufferDeque<Any?> {
         return buffer
     }
 
-    override fun removeBottomAndMoveRestToOppositeSideBuffer(): ImmutableBuffer {
-        throw UnsupportedOperationException()
+    override fun empty(): ImmutableBuffer {
+        return this
     }
 
-    override fun moveToOppositeSideBuffer(): ImmutableBuffer {
+    override fun oppositeSideEmpty(): ImmutableBuffer {
         return LhsEmptyBuffer
     }
 

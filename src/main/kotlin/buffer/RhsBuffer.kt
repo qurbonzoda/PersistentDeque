@@ -3,11 +3,11 @@ package buffer
 import deque.ImmutableDeque
 import level.DequeBottomLevel
 
-internal class RhsBuffer<T>(top: Any?,
-                            size: Int,
-                            next: ImmutableBuffer): AbstractBuffer(top, size, next), ImmutableBufferDeque<T> {
+internal class RhsBuffer(top: Any?,
+                         size: Int,
+                         next: ImmutableBuffer): ImmutableBuffer(top, size, next) {
     // MARK: ImmutableBuffer
-    override fun push(value: Any?): RhsBuffer<T> {
+    override fun push(value: Any?): RhsBuffer {
         return RhsBuffer(value, this.size + 1, this)
     }
 
@@ -27,7 +27,7 @@ internal class RhsBuffer<T>(top: Any?,
         return this.next.getLeafValueAt(index, depth)
     }
 
-    override fun setLeafValueAt(index: Int, value: Any?, depth: Int): RhsBuffer<T> {
+    override fun setLeafValueAt(index: Int, value: Any?, depth: Int): RhsBuffer {
 //        assert(index < this.size shl depth)
 
         val leavesAtNext = this.next.size shl depth
@@ -36,14 +36,14 @@ internal class RhsBuffer<T>(top: Any?,
             val newTop = this.setLeafOfNodeAt(index - leavesAtNext, value, this.top, depth)
             return RhsBuffer(newTop, this.size, this.next)
         }
-        val newNext = this.next.setLeafValueAt(index, value, depth) as RhsBuffer<T>
+        val newNext = this.next.setLeafValueAt(index, value, depth) as RhsBuffer
         return newNext.push(this.top)
     }
 
     override fun pushAllToNextLevelBuffer(nextLevelBuffer: ImmutableBuffer): ImmutableBuffer {
 //        assert(this.size % 2 == 0)
 
-        val result = (this.next as RhsBuffer<*>).next.pushAllToNextLevelBuffer(nextLevelBuffer)
+        val result = (this.next as RhsBuffer).next.pushAllToNextLevelBuffer(nextLevelBuffer)
         val pair = Pair(this.next.top, this.top)
         return result.push(pair)
     }
@@ -67,30 +67,26 @@ internal class RhsBuffer<T>(top: Any?,
     }
 
     // MARK: ImmutableDeque
-    override fun isEmpty(): Boolean {
-        return false
-    }
-
-    override val first: T
+    override val first: Any?
         get() {
-            return this.pop(this.size - 1).top as T
+            return this.pop(this.size - 1).top
         }
 
-    override val last: T
+    override val last: Any?
         get() {
-            return this.top as T
+            return this.top
         }
 
-    override fun addFirst(value: T): ImmutableDeque<T> {
+    override fun addFirst(value: Any?): ImmutableDeque<Any?> {
         val lhs = this.oppositeSideEmpty().push(value)
         return DequeBottomLevel(lhs, this)
     }
 
-    override fun removeFirst(): ImmutableDeque<T> {
-        return this.removeBottomAndMoveRestToOppositeSideBuffer() as ImmutableDeque<T>
+    override fun removeFirst(): ImmutableDeque<Any?> {
+        return this.removeBottomAndMoveRestToOppositeSideBuffer()
     }
 
-    override fun addLast(value: T): ImmutableDeque<T> {
+    override fun addLast(value: Any?): ImmutableDeque<Any?> {
         if (this.size + 1 < MAX_BUFFER_SIZE) {
             return this.push(value)
         }
@@ -104,23 +100,7 @@ internal class RhsBuffer<T>(top: Any?,
         return DequeBottomLevel(lhs, rhs)
     }
 
-    override fun removeLast(): ImmutableDeque<T> {
-        return this.pop() as ImmutableDeque<T>
-    }
-
-    override fun toList(): List<T> {
-        val list = mutableListOf<Any?>()
-        this.addLeafValuesTo(list, 0)
-        return list.toList() as List<T>
-    }
-
-    override fun get(index: Int): T {
-//        assert(index < this.size)
-        return this.getLeafValueAt(index, 0) as T
-    }
-
-    override fun set(index: Int, value: T): ImmutableDeque<T> {
-//        assert(index < this.size)
-        return this.setLeafValueAt(index, value, 0)
+    override fun removeLast(): ImmutableDeque<Any?> {
+        return this.pop()
     }
 }
