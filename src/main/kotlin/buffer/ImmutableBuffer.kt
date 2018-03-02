@@ -4,7 +4,7 @@ import deque.ImmutableDeque
 
 internal abstract class ImmutableBuffer(val top: Any?,
                                         override val size: Int,
-                                        val next: ImmutableBuffer): ImmutableDeque<Any?> {
+                                        val next: ImmutableBuffer?): ImmutableDeque<Any?> {
     val color: Int
         get() = when (this.size) {
             RED_LOW, RED_HIGH       -> RED
@@ -18,7 +18,7 @@ internal abstract class ImmutableBuffer(val top: Any?,
         if (count == 0) {   // pop(count = 1) is very frequent invocation -> optimize
             return this
         }
-        return this.next.pop(count - 1)
+        return this.next!!.pop(count - 1)
     }
 
     fun removeBottom(count: Int): ImmutableBuffer {
@@ -27,13 +27,13 @@ internal abstract class ImmutableBuffer(val top: Any?,
         if (this.size == count) {
             return this.empty()
         }
-        val next = this.next.removeBottom(count)
+        val next = this.next!!.removeBottom(count)
         return next.push(this.top)
     }
 
 
     open fun prependSavingOrder(buffer: ImmutableBuffer): ImmutableBuffer {
-        val result = this.next.prependSavingOrder(buffer)
+        val result = this.next!!.prependSavingOrder(buffer)
         return result.push(this.top)
     }
 
@@ -43,7 +43,7 @@ internal abstract class ImmutableBuffer(val top: Any?,
         var buffer = this
         while (buffer.size > 1) {
             result = result.push(buffer.top)
-            buffer = buffer.next
+            buffer = buffer.next!!
         }
         return result
     }
@@ -54,7 +54,7 @@ internal abstract class ImmutableBuffer(val top: Any?,
         var buffer = this
         while (buffer.size > 1) {
             result = result.push(buffer.top)
-            buffer = buffer.next
+            buffer = buffer.next!!
         }
         return result.push(buffer.top)
     }

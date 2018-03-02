@@ -19,7 +19,7 @@ internal class RhsBuffer(top: Any?,
     override fun getLeafValueAt(index: Int, depth: Int): Any? {
 //        assert(index < this.size shl depth)
 
-        val leavesAtNext = this.next.size shl depth
+        val leavesAtNext = this.next!!.size shl depth
 
         if (index >= leavesAtNext) {
             return this.getLeafOfNodeAt(index - leavesAtNext, this.top, depth)
@@ -30,7 +30,7 @@ internal class RhsBuffer(top: Any?,
     override fun setLeafValueAt(index: Int, value: Any?, depth: Int): RhsBuffer {
 //        assert(index < this.size shl depth)
 
-        val leavesAtNext = this.next.size shl depth
+        val leavesAtNext = this.next!!.size shl depth
 
         if (index >= leavesAtNext) {
             val newTop = this.setLeafOfNodeAt(index - leavesAtNext, value, this.top, depth)
@@ -43,7 +43,7 @@ internal class RhsBuffer(top: Any?,
     override fun pushAllToNextLevelBuffer(nextLevelBuffer: ImmutableBuffer): ImmutableBuffer {
 //        assert(this.size % 2 == 0)
 
-        val result = (this.next as RhsBuffer).next.pushAllToNextLevelBuffer(nextLevelBuffer)
+        val result = (this.next as RhsBuffer).next!!.pushAllToNextLevelBuffer(nextLevelBuffer)
         val pair = Pair(this.next.top, this.top)
         return result.push(pair)
     }
@@ -52,7 +52,7 @@ internal class RhsBuffer(top: Any?,
         if (count == 0) {
             return this.empty()
         }
-        val result = this.next.moveToUpperLevelBuffer(count - 1)
+        val result = this.next!!.moveToUpperLevelBuffer(count - 1)
         val pair = this.top as Pair<*, *>
         return result.push(pair.first).push(pair.second)
     }

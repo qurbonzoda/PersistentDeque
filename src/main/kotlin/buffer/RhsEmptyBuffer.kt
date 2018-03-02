@@ -2,7 +2,7 @@ package buffer
 
 import deque.ImmutableDeque
 
-internal object RhsEmptyBuffer: ImmutableBuffer(null, 0, RhsEmptyBuffer) {
+internal object RhsEmptyBuffer: ImmutableBuffer(null, 0, null) {
     // MARK: ImmutableBuffer
     override fun push(value: Any?): ImmutableBuffer {
         return RhsBuffer(value, 1, this)
