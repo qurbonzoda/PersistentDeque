@@ -242,9 +242,12 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
             return this.withNewLhs(newLhs)
         }
 
+//        println(this.size + 1 - lastRegularizationSize)
+//        lastRegularizationSize = this.size + 1
+
         val canMoveToRhs = YELLOW_HIGH - this.rhs.size
 
-        if (canMoveToRhs > 0) { // TODO: consider finding optimal value
+        if (canMoveToRhs >= MIN_COUNT_FULL_BOTTOM_LEVEL_DEQUE_SHOULD_MOVE_TO_OPPOSITE_SIDE) {
             val toLeaveForLhs = this.lhs.size - canMoveToRhs
             val fromLhs = this.lhs.pop(toLeaveForLhs).moveToOppositeSideBuffer()
             val newRhs = this.rhs.prependSavingOrder(fromLhs)
@@ -252,14 +255,14 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
             return DequeBottomLevel(newLhs, newRhs)
         }
 
-        val toPushToNextLevel = (MAX_BUFFER_SIZE shr 2) shl 1   // make even number
-        val toLeaveForLhs = this.lhs.size - toPushToNextLevel
-        val toLeaveForRhs = this.rhs.size - toPushToNextLevel
+        val toMoveToNextLevel = FULL_BOTTOM_LEVEL_DEQUE_SHOULD_MOVE_TO_NEXT_LEVEL
+        val toLeaveForLhs = this.lhs.size - toMoveToNextLevel
+        val toLeaveForRhs = this.rhs.size - toMoveToNextLevel
 
         val nextLevelLhs = this.lhs.pop(toLeaveForLhs).pushAllToNextLevelBuffer(LhsEmptyBuffer)
         val nextLevelRhs = this.rhs.pop(toLeaveForRhs).pushAllToNextLevelBuffer(RhsEmptyBuffer)
-        val newLhs = this.lhs.removeBottom(toPushToNextLevel).push(value)
-        val newRhs = this.rhs.removeBottom(toPushToNextLevel)
+        val newLhs = this.lhs.removeBottom(toMoveToNextLevel).push(value)
+        val newRhs = this.rhs.removeBottom(toMoveToNextLevel)
 
 //        assert(newLhs.color == GREEN && newRhs.color == GREEN)
 

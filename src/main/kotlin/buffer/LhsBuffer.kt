@@ -82,7 +82,10 @@ internal class LhsBuffer(top: Any?,
             return this.push(value)
         }
 
-        val toMoveToRhs = MAX_BUFFER_SIZE shr 1
+//        println(this.size + 1 - lastRegularizationSize)
+//        lastRegularizationSize = this.size + 1
+
+        val toMoveToRhs = FULL_BUFFER_DEQUE_SHOULD_MOVE_TO_OPPOSITE_SIDE
         val toLeaveForLhs = this.size - toMoveToRhs
 
         val rhs = this.pop(toLeaveForLhs).moveToOppositeSideBuffer()

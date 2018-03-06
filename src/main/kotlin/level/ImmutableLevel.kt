@@ -37,14 +37,22 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
                                         lowerSubStack: DequeSubStack?): ImmutableDeque<T>
 
     fun <T> makeGreenUpperLevelPushingLhs(upper: ImmutableLevel, valueToPush: Any?, lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
-        var upperLhs = upper.lhs
-        var upperRhs = upper.rhs
-
-        var thisLhs = this.lhs
-        var thisRhs = this.rhs
-
 //        assert(upperLhs.size == YELLOW_HIGH)
 //        assert(upperRhs.color != RED)
+
+        var upperLhs = upper.lhs
+        var thisLhs = this.lhs
+
+        val delta = if (this.color == GREEN && lowerSubStack != null && lowerSubStack.stack.color == RED) 1 else 0
+        val canPushToThisLhs = MAX_BUFFER_SIZE - thisLhs.size - delta
+        val toPushToThisLhs = minOf(FULL_UPPER_LEVEL_SHOULD_MOVE_TO_THIS_LEVEL, canPushToThisLhs shl 1)
+        val toLeaveForUpperLhs = upperLhs.size - toPushToThisLhs
+
+        thisLhs = upperLhs.pop(toLeaveForUpperLhs).pushAllToNextLevelBuffer(thisLhs)
+        upperLhs = upperLhs.removeBottom(toPushToThisLhs).push(valueToPush)
+
+        var upperRhs = upper.rhs
+        var thisRhs = this.rhs
 
         if (upperRhs.size == YELLOW_LOW) {
             val thisRhsTop = thisRhs.moveToUpperLevelBuffer(1)
@@ -54,15 +62,6 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
             thisRhs = upperRhs.pop(upperRhs.size - 2).pushAllToNextLevelBuffer(thisRhs)
             upperRhs = upperRhs.removeBottom(2)
         }
-
-        val delta = if (this.color == GREEN) 1 else 0
-
-        val canPushToThisLhs = MAX_BUFFER_SIZE - thisLhs.size - delta
-        val toPushToThisLhs = minOf((MAX_BUFFER_SIZE shr 2) shl 1, canPushToThisLhs shl 1)
-        val toLeaveForUpperLhs = upperLhs.size - toPushToThisLhs
-
-        thisLhs = upperLhs.pop(toLeaveForUpperLhs).pushAllToNextLevelBuffer(thisLhs)
-        upperLhs = upperLhs.removeBottom(toPushToThisLhs).push(valueToPush)
 
         return this.makeImmutableDeque(upperLhs, upperRhs, thisLhs, thisRhs, lowerSubStack)
     }

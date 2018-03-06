@@ -155,6 +155,9 @@ internal class NonBottomLevel<T>(lhs: ImmutableBuffer,
             return this.withNewLhs(newLhs)
         }
 
+//        println(this.size + 1 - lastRegularizationSize)
+//        lastRegularizationSize = this.size + 1
+
         return this.next.makeGreenUpperLevelPushingLhs(this, value, null)
     }
 
