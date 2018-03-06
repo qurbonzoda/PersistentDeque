@@ -5,7 +5,7 @@ import level.DequeBottomLevel
 
 internal class LhsBuffer(top: Any?,
                          size: Int,
-                         next: ImmutableBuffer): ImmutableBuffer(top, size, next) {
+                         override val next: ImmutableBuffer): ImmutableBuffer(top, size, next) {
     // MARK: ImmutableBuffer
     override fun push(value: Any?): LhsBuffer {
         return LhsBuffer(value, this.size + 1, this)
@@ -24,7 +24,7 @@ internal class LhsBuffer(top: Any?,
         if (index < leavesCount) {
             return this.getLeafOfNodeAt(index, this.top, depth)
         }
-        return this.next!!.getLeafValueAt(index - leavesCount, depth)
+        return this.next.getLeafValueAt(index - leavesCount, depth)
     }
 
     override fun setLeafValueAt(index: Int, value: Any?, depth: Int): ImmutableBuffer {
@@ -34,16 +34,16 @@ internal class LhsBuffer(top: Any?,
 
         if (index < leavesCount) {
             val newTop = this.setLeafOfNodeAt(index, value, this.top, depth)
-            return LhsBuffer(newTop, this.size, this.next!!)
+            return LhsBuffer(newTop, this.size, this.next)
         }
-        val newNext = this.next!!.setLeafValueAt(index - leavesCount, value, depth)
+        val newNext = this.next.setLeafValueAt(index - leavesCount, value, depth)
         return newNext.push(this.top)
     }
 
     override fun pushAllToNextLevelBuffer(nextLevelBuffer: ImmutableBuffer): ImmutableBuffer {
 //        assert(this.size % 2 == 0)
 
-        val result = (this.next as LhsBuffer).next!!.pushAllToNextLevelBuffer(nextLevelBuffer)
+        val result = (this.next as LhsBuffer).next.pushAllToNextLevelBuffer(nextLevelBuffer)
         val pair = Pair(this.top, this.next.top)
         return result.push(pair)
     }
@@ -52,12 +52,11 @@ internal class LhsBuffer(top: Any?,
         if (count == 0) {
             return this.empty()
         }
-        val result = this.next!!.moveToUpperLevelBuffer(count - 1)
+        val result = this.next.moveToUpperLevelBuffer(count - 1)
         val pair = this.top as Pair<*, *>
         return result.push(pair.second).push(pair.first)
     }
 
-    // MARK: AbstractBuffer
     override fun empty(): ImmutableBuffer {
         return LhsEmptyBuffer
     }

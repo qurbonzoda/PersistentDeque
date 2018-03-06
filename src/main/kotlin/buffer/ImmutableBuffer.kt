@@ -4,7 +4,7 @@ import deque.ImmutableDeque
 
 internal abstract class ImmutableBuffer(val top: Any?,
                                         override val size: Int,
-                                        val next: ImmutableBuffer?): ImmutableDeque<Any?> {
+                                        open val next: ImmutableBuffer?): ImmutableDeque<Any?> {
     val color: Int
         get() = when (this.size) {
             RED_LOW, RED_HIGH       -> RED

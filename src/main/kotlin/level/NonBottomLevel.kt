@@ -5,15 +5,10 @@ import deque.ImmutableDeque
 import persistentDeque.DequeSubStack
 import persistentDeque.PersistentDeque
 
-internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
-                                 override val rhs: ImmutableBuffer,
-                                 override val next: ImmutableLevel): ImmutableLevelDeque<T> {
+internal class NonBottomLevel<T>(lhs: ImmutableBuffer,
+                                 rhs: ImmutableBuffer,
+                                 override val next: ImmutableLevel): ImmutableLevel(lhs, rhs, next), ImmutableDeque<T> {
     // MARK: ImmutableLevel
-    override val color: Int
-        get() {
-            return minOf(this.lhs.color, this.rhs.color)
-        }
-
     override fun withNewLhs(newLhs: ImmutableBuffer): NonBottomLevel<T> {
         return NonBottomLevel(newLhs, this.rhs, this.next)
     }
@@ -67,12 +62,35 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
         return this.withNewNext(newNext)
     }
 
+    override fun makeRhsFreeToPush(count: Int): ImmutableLevel {
+        if (this.rhs.size + count <= MAX_BUFFER_SIZE) {
+            return this
+        }
+
+        val toMakeFreeCount = this.rhs.size + count - MAX_BUFFER_SIZE
+        val newEvenCount = ((toMakeFreeCount + 1) shr 1) shl 1
+
+        val nextLevel = this.next.makeRhsFreeToPush((newEvenCount shr 1) + 1)
+
+        val toMoveToNextRhs = minOf(newEvenCount, (YELLOW_HIGH - nextLevel.rhs.size) shl 1)
+
+        val toLeaveForRhs = this.rhs.size - toMoveToNextRhs
+
+        val newNextRhs = this.rhs.pop(toLeaveForRhs).pushAllToNextLevelBuffer(nextLevel.rhs)
+        val newRhs = this.rhs.removeBottom(toMoveToNextRhs)
+
+        val newNextLevel = nextLevel.withNewRhs(newNextRhs)
+
+        assert(newNextLevel.color != RED)
+
+        return NonBottomLevel<Any?>(this.lhs, newRhs, newNextLevel)
+    }
+
     override fun <T> makeImmutableDeque(upperLhs: ImmutableBuffer,
                                         upperRhs: ImmutableBuffer,
                                         thisLhs: ImmutableBuffer,
                                         thisRhs: ImmutableBuffer,
                                         lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
-
 //        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
 
         val newThis = NonBottomLevel<T>(thisLhs, thisRhs, this.next)
@@ -154,6 +172,9 @@ internal class NonBottomLevel<T>(override val lhs: ImmutableBuffer,
             val newRhs = rhs.push(value)
             return this.withNewRhs(newRhs)
         }
+
+//        println(this.size + 1 - lastRegularizationSize)
+//        lastRegularizationSize = this.size + 1
 
         return this.next.makeGreenUpperLevelPushingRhs(this, value, null)
     }

@@ -5,7 +5,7 @@ import level.DequeBottomLevel
 
 internal class RhsBuffer(top: Any?,
                          size: Int,
-                         next: ImmutableBuffer): ImmutableBuffer(top, size, next) {
+                         override val next: ImmutableBuffer): ImmutableBuffer(top, size, next) {
     // MARK: ImmutableBuffer
     override fun push(value: Any?): RhsBuffer {
         return RhsBuffer(value, this.size + 1, this)
@@ -19,7 +19,7 @@ internal class RhsBuffer(top: Any?,
     override fun getLeafValueAt(index: Int, depth: Int): Any? {
 //        assert(index < this.size shl depth)
 
-        val leavesAtNext = this.next!!.size shl depth
+        val leavesAtNext = this.next.size shl depth
 
         if (index >= leavesAtNext) {
             return this.getLeafOfNodeAt(index - leavesAtNext, this.top, depth)
@@ -30,7 +30,7 @@ internal class RhsBuffer(top: Any?,
     override fun setLeafValueAt(index: Int, value: Any?, depth: Int): RhsBuffer {
 //        assert(index < this.size shl depth)
 
-        val leavesAtNext = this.next!!.size shl depth
+        val leavesAtNext = this.next.size shl depth
 
         if (index >= leavesAtNext) {
             val newTop = this.setLeafOfNodeAt(index - leavesAtNext, value, this.top, depth)
@@ -43,7 +43,7 @@ internal class RhsBuffer(top: Any?,
     override fun pushAllToNextLevelBuffer(nextLevelBuffer: ImmutableBuffer): ImmutableBuffer {
 //        assert(this.size % 2 == 0)
 
-        val result = (this.next as RhsBuffer).next!!.pushAllToNextLevelBuffer(nextLevelBuffer)
+        val result = (this.next as RhsBuffer).next.pushAllToNextLevelBuffer(nextLevelBuffer)
         val pair = Pair(this.next.top, this.top)
         return result.push(pair)
     }
@@ -52,12 +52,11 @@ internal class RhsBuffer(top: Any?,
         if (count == 0) {
             return this.empty()
         }
-        val result = this.next!!.moveToUpperLevelBuffer(count - 1)
+        val result = this.next.moveToUpperLevelBuffer(count - 1)
         val pair = this.top as Pair<*, *>
         return result.push(pair.first).push(pair.second)
     }
 
-    // MARK: AbstractBuffer
     override fun empty(): ImmutableBuffer {
         return RhsEmptyBuffer
     }
@@ -91,7 +90,10 @@ internal class RhsBuffer(top: Any?,
             return this.push(value)
         }
 
-        val toMoveToLhs = MAX_BUFFER_SIZE shr 1
+//        println(this.size + 1 - lastRegularizationSize)
+//        lastRegularizationSize = this.size + 1
+
+        val toMoveToLhs = FULL_BUFFER_DEQUE_SHOULD_MOVE_TO_OPPOSITE_SIDE
         val toLeaveForRhs = this.size - toMoveToLhs
 
         val lhs = this.pop(toLeaveForRhs).moveToOppositeSideBuffer()
