@@ -13,14 +13,13 @@ internal class LhsBuffer(top: Any?,
 
     override fun addLeafValuesTo(list: MutableList<Any?>, depth: Int) {
         this.addLeavesOfNode(this.top, list, depth)
-        this.pop().addLeafValuesTo(list, depth)
+        this.next.addLeafValuesTo(list, depth)
     }
 
     override fun getLeafValueAt(index: Int, depth: Int): Any? {
 //        assert(index < this.size shl depth)
 
         val leavesCount = 1 shl depth
-
         if (index < leavesCount) {
             return this.getLeafOfNodeAt(index, this.top, depth)
         }
@@ -74,6 +73,9 @@ internal class LhsBuffer(top: Any?,
 
     override val last: Any?
         get() {
+            if (this.size == 1) {
+                return this.top
+            }
             return this.pop(this.size - 1).top
         }
 

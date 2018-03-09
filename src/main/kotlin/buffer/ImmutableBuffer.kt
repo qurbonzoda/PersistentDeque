@@ -13,10 +13,10 @@ internal abstract class ImmutableBuffer(val top: Any?,
         }
 
     fun pop(count: Int = 1): ImmutableBuffer {
-//        assert(count <= this.size)
+//        assert(count > 0 &&  count <= this.size)
 
-        if (count == 0) {   // pop(count = 1) is very frequent invocation -> optimize
-            return this
+        if (count == 1) {
+            return this.next!!
         }
         return this.next!!.pop(count - 1)
     }
@@ -100,14 +100,12 @@ internal abstract class ImmutableBuffer(val top: Any?,
     abstract fun empty(): ImmutableBuffer
     abstract fun oppositeSideEmpty(): ImmutableBuffer
 
-    // leaky abstractions
     abstract fun addLeafValuesTo(list: MutableList<Any?>, depth: Int)
     abstract fun getLeafValueAt(index: Int, depth: Int): Any?
     abstract fun setLeafValueAt(index: Int, value: Any?, depth: Int): ImmutableBuffer
 
     abstract fun pushAllToNextLevelBuffer(nextLevelBuffer: ImmutableBuffer): ImmutableBuffer
     abstract fun moveToUpperLevelBuffer(count: Int): ImmutableBuffer
-
 
     // ImmutableDeque
     override fun isEmpty(): Boolean {

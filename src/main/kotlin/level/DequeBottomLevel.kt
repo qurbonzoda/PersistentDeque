@@ -56,52 +56,18 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
 //        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
 //        assert(lowerSubStack == null)
 
-        if (thisLhs.size == 0 && thisRhs.size == 0) {
-            return DequeBottomLevel(upperLhs, upperRhs)
-        }
-
-        if (thisLhs.size == 0) {
-            if (thisRhs.size > 1) {
-                val newLhs = thisRhs.pop(thisRhs.size - 1).moveToOppositeSideBuffer()
-                val newRhs = thisRhs.removeBottom(1)
-                val newThis = DequeBottomLevel<T>(newLhs, newRhs)
-                return NonBottomLevel(upperLhs, upperRhs, newThis)
-            }
-
-//            assert(upperLhs.size + 2 < YELLOW_HIGH)
-//            assert(thisRhs.size == 1)
-
-            val toPrependToUpperLhs = thisRhs.moveToOppositeSideBuffer().moveToUpperLevelBuffer(1)
-            val newUpperLhs = upperLhs.prependSavingOrder(toPrependToUpperLhs)
-
-            return DequeBottomLevel(newUpperLhs, upperRhs)
-        }
-        if (thisRhs.size == 0) {
-            if (thisLhs.size > 1) {
-                val newRhs = thisLhs.pop(thisLhs.size - 1).moveToOppositeSideBuffer()
-                val newLhs = thisLhs.removeBottom(1)
-                val newThis = DequeBottomLevel<T>(newLhs, newRhs)
-                return NonBottomLevel(upperLhs, upperRhs, newThis)
-            }
-
-//            assert(upperRhs.size + 2 < YELLOW_HIGH)
-//            assert(thisLhs.size == 1)
-
-            val toPrependToUpperRhs = thisLhs.moveToOppositeSideBuffer().moveToUpperLevelBuffer(1)
-            val newUpperRhs = upperRhs.prependSavingOrder(toPrependToUpperRhs)
-
-            return DequeBottomLevel(upperLhs, newUpperRhs)
+        if (thisLhs.size == 0 || thisRhs.size == 0 || (thisLhs.color != RED && thisRhs.color != RED)) {
+            return this.makeImmutableLevel(upperLhs, upperRhs, thisLhs, thisRhs) as ImmutableDeque<T>
         }
 
 //        assert(thisLhs.size > 0 && thisRhs.size > 0)
 
         val newThis = DequeBottomLevel<T>(thisLhs, thisRhs)
-        if (newThis.color == RED) {
-            val newUpper = SubStackBottomLevel(upperLhs, upperRhs)
-            return PersistentDeque(newUpper, DequeSubStack(newThis, null))
-        }
 
-        return NonBottomLevel(upperLhs, upperRhs, newThis)
+//        assert(newThis.color == RED)
+
+        val newUpper = SubStackBottomLevel(upperLhs, upperRhs)
+        return PersistentDeque(newUpper, DequeSubStack(newThis, null))
     }
 
     override fun <T> makeImmutableDeque(topSubStack: ImmutableLevel,
@@ -113,9 +79,28 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
 //        assert(upperLhs.color == GREEN && upperRhs.color == GREEN)
 //        assert(lowerSubStack == null)
 
-        if (thisLhs.size == 0 && thisRhs.size == 0) {
-            val newUpper = DequeBottomLevel<T>(upperLhs, upperRhs)
+        if (thisLhs.size == 0 || thisRhs.size == 0 || (thisLhs.color != RED && thisRhs.color != RED)) {
+            val newUpper = this.makeImmutableLevel(upperLhs, upperRhs, thisLhs, thisRhs)
             return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
+        }
+
+//        assert(thisLhs.size > 0 && thisRhs.size > 0)
+
+        val newThis = DequeBottomLevel<T>(thisLhs, thisRhs)
+
+//        assert(newThis.color == RED)
+
+        val newUpper = SubStackBottomLevel(upperLhs, upperRhs)
+        val nextSubStack = DequeSubStack(newUpper, DequeSubStack(newThis, null))
+        return PersistentDeque(topSubStack, nextSubStack)
+    }
+
+    private fun makeImmutableLevel(upperLhs: ImmutableBuffer,
+                                   upperRhs: ImmutableBuffer,
+                                   thisLhs: ImmutableBuffer,
+                                   thisRhs: ImmutableBuffer): ImmutableLevel {
+        if (thisLhs.size == 0 && thisRhs.size == 0) {
+            return DequeBottomLevel<Any?>(upperLhs, upperRhs)
         }
 
         if (thisLhs.size == 0) {
@@ -123,95 +108,39 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
                 val newLhs = thisRhs.pop(thisRhs.size - 1).moveToOppositeSideBuffer()
                 val newRhs = thisRhs.removeBottom(1)
                 val newThis = DequeBottomLevel<T>(newLhs, newRhs)
-
-//                assert(newThis.color != RED)
-
-                val newUpper = NonBottomLevel<T>(upperLhs, upperRhs, newThis)
-                return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
+                return NonBottomLevel<Any?>(upperLhs, upperRhs, newThis)
             }
 
+//            assert(upperLhs.size + 2 < YELLOW_HIGH)
 //            assert(thisRhs.size == 1)
 
-            if (upperRhs.size + 2 < YELLOW_HIGH) {
-                val fromThis = thisRhs.moveToUpperLevelBuffer(1)
-                val newUpperRhs = upperRhs.prependSavingOrder(fromThis)
+            val toPrependToUpperLhs = thisRhs.moveToOppositeSideBuffer().moveToUpperLevelBuffer(1)
+            val newUpperLhs = upperLhs.prependSavingOrder(toPrependToUpperLhs)
 
-                val newUpper = DequeBottomLevel<T>(upperLhs, newUpperRhs)
-                return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
-            }
-            if (upperLhs.size + 2 < YELLOW_HIGH) {
-                val fromThis = thisRhs.moveToOppositeSideBuffer().moveToUpperLevelBuffer(1)
-                val newUpperLhs = upperLhs.prependSavingOrder(fromThis)
-
-                val newUpper = DequeBottomLevel<T>(newUpperLhs, upperRhs)
-                return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
-            }
-
-//            assert(upperLhs.size - 2 > YELLOW_LOW)
-
-            val newThisLhs = upperLhs.pop(upperLhs.size - 2).pushAllToNextLevelBuffer(thisLhs)
-            val newUpperLhs = upperLhs.removeBottom(2)
-
-            val newThis = DequeBottomLevel<T>(newThisLhs, thisRhs)
-
-//            assert(newThisLhs.size == 1 && thisRhs.size == 1)
-
-            val newUpper = NonBottomLevel<T>(newUpperLhs, upperRhs, newThis)
-            return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
+            return DequeBottomLevel<Any?>(newUpperLhs, upperRhs)
         }
         if (thisRhs.size == 0) {
             if (thisLhs.size > 1) {
                 val newRhs = thisLhs.pop(thisLhs.size - 1).moveToOppositeSideBuffer()
                 val newLhs = thisLhs.removeBottom(1)
                 val newThis = DequeBottomLevel<T>(newLhs, newRhs)
-
-//                assert(newThis.color != RED)
-
-                val newUpper = NonBottomLevel<T>(upperLhs, upperRhs, newThis)
-                return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
+                return NonBottomLevel<Any?>(upperLhs, upperRhs, newThis)
             }
 
+//            assert(upperRhs.size + 2 < YELLOW_HIGH)
 //            assert(thisLhs.size == 1)
 
-            if (upperLhs.size + 2 < YELLOW_HIGH) {
-                val fromThis = thisLhs.moveToUpperLevelBuffer(1)
-                val newUpperLhs = upperLhs.prependSavingOrder(fromThis)
-                val newUpper = DequeBottomLevel<T>(newUpperLhs, upperRhs)
-                return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
-            }
-            if (upperRhs.size + 2 < YELLOW_HIGH) {
-                val fromThis = thisLhs.moveToOppositeSideBuffer().moveToUpperLevelBuffer(1)
-                val newUpperRhs = upperRhs.prependSavingOrder(fromThis)
+            val toPrependToUpperRhs = thisLhs.moveToOppositeSideBuffer().moveToUpperLevelBuffer(1)
+            val newUpperRhs = upperRhs.prependSavingOrder(toPrependToUpperRhs)
 
-                val newUpper = DequeBottomLevel<T>(upperLhs, newUpperRhs)
-                return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
-            }
-
-//            assert(upperRhs.size - 2 > YELLOW_LOW)
-
-            val newThisRhs = upperRhs.pop(upperRhs.size - 2).pushAllToNextLevelBuffer(thisRhs)
-            val newUpperRhs = upperRhs.removeBottom(2)
-
-            val newThis = DequeBottomLevel<T>(thisLhs, newThisRhs)
-
-//            assert(thisLhs.size == 1 && newThisRhs.size == 1)
-
-            val newUpper = NonBottomLevel<T>(upperLhs, newUpperRhs, newThis)
-            return PersistentDeque(topSubStack, DequeSubStack(newUpper, null))
+            return DequeBottomLevel<Any?>(upperLhs, newUpperRhs)
         }
-
-//        assert(thisLhs.size > 0 && thisRhs.size > 0)
 
         val newThis = DequeBottomLevel<T>(thisLhs, thisRhs)
-        val nextSubStack = if (newThis.color == RED) {
-            val newUpper = SubStackBottomLevel(upperLhs, upperRhs)
-            DequeSubStack(newUpper, DequeSubStack(newThis, null))
-        } else {
-            val newUpper = NonBottomLevel<T>(upperLhs, upperRhs, newThis)
-            DequeSubStack(newUpper, null)
-        }
 
-        return PersistentDeque(topSubStack, nextSubStack)
+//        assert(newThis.color != RED)
+
+        return NonBottomLevel<Any?>(upperLhs, upperRhs, newThis)
     }
 
     // MARK: ImmutableDeque

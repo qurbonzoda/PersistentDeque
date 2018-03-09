@@ -37,8 +37,8 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
                                         lowerSubStack: DequeSubStack?): ImmutableDeque<T>
 
     fun <T> makeGreenUpperLevelPushingLhs(upper: ImmutableLevel, valueToPush: Any?, lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
-//        assert(upperLhs.size == YELLOW_HIGH)
-//        assert(upperRhs.color != RED)
+//        assert(upper.lhs.size == YELLOW_HIGH)
+//        assert(upper.rhs.color != RED)
 
         var upperLhs = upper.lhs
         var thisLhs = this.lhs
@@ -99,14 +99,20 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
     }
 
     fun <T> makeGreenUpperLevelPoppingLhs(upper: ImmutableLevel, lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
-        var upperLhs = upper.lhs.pop()
-        var upperRhs = upper.rhs
+//        assert(upper.lhs.size == RED_LOW)
+//        assert(upper.rhs.color != RED)
 
         var thisLhs = this.lhs
-        var thisRhs = this.rhs
 
-//        assert(upperLhs.size == RED_LOW)
-//        assert(upperRhs.color != RED)
+        val delta = if (this.color == GREEN && lowerSubStack != null && lowerSubStack.stack.color == RED) 1 else 0
+        val canPopFromThisLhs = thisLhs.size - delta
+        val toPushToUpperLhs = minOf((MAX_BUFFER_SIZE shr 2), canPopFromThisLhs)
+
+        val upperLhs = thisLhs.moveToUpperLevelBuffer(toPushToUpperLhs)
+        thisLhs = thisLhs.pop(toPushToUpperLhs)
+
+        var upperRhs = upper.rhs
+        var thisRhs = this.rhs
 
         if (upperRhs.size == YELLOW_LOW) {
             val thisRhsTop = thisRhs.moveToUpperLevelBuffer(1)
@@ -117,26 +123,24 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
             upperRhs = upperRhs.removeBottom(2)
         }
 
-        val delta = if (this.color == GREEN) 1 else 0
-
-        val canPopFromThisLhs = thisLhs.size - delta
-        val toPushToUpperLhs = minOf((MAX_BUFFER_SIZE shr 2), canPopFromThisLhs)
-
-        upperLhs = thisLhs.moveToUpperLevelBuffer(toPushToUpperLhs)
-        thisLhs = thisLhs.pop(toPushToUpperLhs)
-
         return this.makeImmutableDeque(upperLhs, upperRhs, thisLhs, thisRhs, lowerSubStack)
     }
 
     fun <T> makeGreenUpperLevelPoppingRhs(upper: ImmutableLevel, lowerSubStack: DequeSubStack?): ImmutableDeque<T> {
-        var upperLhs = upper.lhs
-        var upperRhs = upper.rhs.pop()
+//        assert(upper.rhs.size == RED_LOW)
+//        assert(upper.lhs.color != RED)
 
-        var thisLhs = this.lhs
         var thisRhs = this.rhs
 
-//        assert(upperRhs.size == RED_LOW)
-//        assert(upperLhs.color != RED)
+        val delta = if (this.color == GREEN && lowerSubStack != null && lowerSubStack.stack.color == RED) 1 else 0
+        val canPopFromThisRhs = thisRhs.size - delta
+        val toPushToUpperRhs = minOf((MAX_BUFFER_SIZE shr 2), canPopFromThisRhs)
+
+        val upperRhs = thisRhs.moveToUpperLevelBuffer(toPushToUpperRhs)
+        thisRhs = thisRhs.pop(toPushToUpperRhs)
+
+        var upperLhs = upper.lhs
+        var thisLhs = this.lhs
 
         if (upperLhs.size == YELLOW_LOW) {
             val thisLhsTop = thisLhs.moveToUpperLevelBuffer(1)
@@ -146,14 +150,6 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
             thisLhs = upperLhs.pop(upperLhs.size - 2).pushAllToNextLevelBuffer(thisLhs)
             upperLhs = upperLhs.removeBottom(2)
         }
-
-        val delta = if (this.color == GREEN) 1 else 0
-
-        val canPopFromThisRhs = thisRhs.size - delta
-        val toPushToUpperRhs = minOf((MAX_BUFFER_SIZE shr 2), canPopFromThisRhs)
-
-        upperRhs = thisRhs.moveToUpperLevelBuffer(toPushToUpperRhs)
-        thisRhs = thisRhs.pop(toPushToUpperRhs)
 
         return this.makeImmutableDeque(upperLhs, upperRhs, thisLhs, thisRhs, lowerSubStack)
     }

@@ -12,7 +12,7 @@ internal class RhsBuffer(top: Any?,
     }
 
     override fun addLeafValuesTo(list: MutableList<Any?>, depth: Int) {
-        this.pop().addLeafValuesTo(list, depth)
+        this.next.addLeafValuesTo(list, depth)
         this.addLeavesOfNode(this.top, list, depth)
     }
 
@@ -20,7 +20,6 @@ internal class RhsBuffer(top: Any?,
 //        assert(index < this.size shl depth)
 
         val leavesAtNext = this.next.size shl depth
-
         if (index >= leavesAtNext) {
             return this.getLeafOfNodeAt(index - leavesAtNext, this.top, depth)
         }
@@ -31,11 +30,11 @@ internal class RhsBuffer(top: Any?,
 //        assert(index < this.size shl depth)
 
         val leavesAtNext = this.next.size shl depth
-
         if (index >= leavesAtNext) {
             val newTop = this.setLeafOfNodeAt(index - leavesAtNext, value, this.top, depth)
             return RhsBuffer(newTop, this.size, this.next)
         }
+
         val newNext = this.next.setLeafValueAt(index, value, depth) as RhsBuffer
         return newNext.push(this.top)
     }
@@ -68,6 +67,9 @@ internal class RhsBuffer(top: Any?,
     // MARK: ImmutableDeque
     override val first: Any?
         get() {
+            if (this.size == 1) {
+                return this.top
+            }
             return this.pop(this.size - 1).top
         }
 

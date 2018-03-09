@@ -47,7 +47,7 @@ internal object RhsEmptyBuffer: ImmutableBuffer(null, 0, null) {
     override val last: Any? = null
 
     override fun addFirst(value: Any?): ImmutableDeque<Any?> {
-        return RhsBuffer(value, 1, this)
+        return this.oppositeSideEmpty().push(value)
     }
 
     override fun removeFirst(): ImmutableDeque<Any?> {
@@ -55,7 +55,7 @@ internal object RhsEmptyBuffer: ImmutableBuffer(null, 0, null) {
     }
 
     override fun addLast(value: Any?): ImmutableDeque<Any?> {
-        return RhsBuffer(value, 1, this)
+        return this.push(value)
     }
 
     override fun removeLast(): ImmutableDeque<Any?> {
