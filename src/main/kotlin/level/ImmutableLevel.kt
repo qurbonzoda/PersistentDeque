@@ -161,16 +161,16 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         var upperLhs = upper.lhs
         var upperRhs = upper.rhs
 
-        val delta = if (this.color == GREEN && lowerSubStack != null && lowerSubStack.stack.color == RED) 1 else 0
-
         val thisLevel =  if (upperRhs.size >= YELLOW_HIGH) {
-             this.makeRhsFreeToPush(MIN_COUNT_FULL_UPPER_LEVEL_SHOULD_MOVE_TO_THIS_LEVEL + delta)
+             this.makeRhsFreeToPush(MIN_COUNT_FULL_UPPER_LEVEL_SHOULD_MOVE_TO_THIS_LEVEL)
         } else {
             this
         }
 
         var thisLhs = thisLevel.lhs
         var thisRhs = thisLevel.rhs
+
+        val delta = if (this.color == GREEN && lowerSubStack != null && lowerSubStack.stack.color == RED) 1 else 0
 
         if (upperLhs.size <= YELLOW_LOW) {
             val canPopFromThisLhs = thisLhs.size - delta
