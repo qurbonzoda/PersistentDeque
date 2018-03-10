@@ -26,15 +26,14 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
             return this
         }
 
-        val toMakeFreeCount = this.rhs.size + count - MAX_BUFFER_SIZE
-        if (this.lhs.size + toMakeFreeCount <= GREEN_HIGH) {
-            val fromRhs = this.rhs.pop(this.rhs.size - toMakeFreeCount).moveToOppositeSideBuffer()
+        if (this.lhs.size + count <= GREEN_HIGH) {
+            val fromRhs = this.rhs.pop(this.rhs.size - count).moveToOppositeSideBuffer()
             val newLhs = this.lhs.prependSavingOrder(fromRhs)
-            val newRhs = this.rhs.removeBottom(toMakeFreeCount)
+            val newRhs = this.rhs.removeBottom(count)
             return DequeBottomLevel<Any?>(newLhs, newRhs)
         }
 
-        val toMoveToNextRhs = ((toMakeFreeCount + 1) shr 1) shl 1
+        val toMoveToNextRhs = ((count + 1) shr 1) shl 1
 
         val toLeaveForLhs = this.lhs.size - 2
         val toLeaveForRhs = this.rhs.size - toMoveToNextRhs

@@ -67,12 +67,10 @@ internal class NonBottomLevel<T>(lhs: ImmutableBuffer,
             return this
         }
 
-        val toMakeFreeCount = this.rhs.size + count - MAX_BUFFER_SIZE
-        val newEvenCount = ((toMakeFreeCount + 1) shr 1) shl 1
+        val nextLevel = this.next.makeRhsFreeToPush(count)
 
-        val nextLevel = this.next.makeRhsFreeToPush((newEvenCount shr 1) + 1)
-
-        val toMoveToNextRhs = minOf(newEvenCount, (YELLOW_HIGH - nextLevel.rhs.size) shl 1)
+        val evenCount = ((count + 1) shr 1) shl 1
+        val toMoveToNextRhs = minOf(evenCount, (YELLOW_HIGH - nextLevel.rhs.size) shl 1)
         val toLeaveForRhs = this.rhs.size - toMoveToNextRhs
 
         val newNextRhs = this.rhs.pop(toLeaveForRhs).pushAllToNextLevelBuffer(nextLevel.rhs)
