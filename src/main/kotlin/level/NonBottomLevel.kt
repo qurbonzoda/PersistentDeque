@@ -80,7 +80,7 @@ internal class NonBottomLevel<T>(lhs: ImmutableBuffer,
 
         val newNextLevel = nextLevel.withNewRhs(newNextRhs)
 
-        assert(newNextLevel.color != RED)
+//        assert(newNextLevel.color != RED)
 
         return NonBottomLevel<Any?>(this.lhs, newRhs, newNextLevel)
     }
@@ -166,6 +166,9 @@ internal class NonBottomLevel<T>(lhs: ImmutableBuffer,
             return this.withNewLhs(newLhs)
         }
 
+//        println(this.size - 1 - lastRegularizationSize)
+//        lastRegularizationSize = this.size - 1
+
         return this.next.makeGreenUpperLevelPoppingLhs(this, null)
     }
 
@@ -186,6 +189,9 @@ internal class NonBottomLevel<T>(lhs: ImmutableBuffer,
             val newRhs = this.rhs.pop()
             return this.withNewRhs(newRhs)
         }
+
+//        println(this.size - 1 - lastRegularizationSize)
+//        lastRegularizationSize = this.size - 1
 
         return this.next.makeGreenUpperLevelPoppingRhs(this, null)
     }

@@ -106,7 +106,7 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
 
         val delta = if (this.color == GREEN && lowerSubStack != null && lowerSubStack.stack.color == RED) 1 else 0
         val canPopFromThisLhs = thisLhs.size - delta
-        val toPushToUpperLhs = minOf((MAX_BUFFER_SIZE shr 2), canPopFromThisLhs)
+        val toPushToUpperLhs = minOf(EMPTY_UPPER_LEVEL_SHOULD_MOVE_FROM_THIS_LEVEL, canPopFromThisLhs)
 
         val upperLhs = thisLhs.moveToUpperLevelBuffer(toPushToUpperLhs)
         thisLhs = thisLhs.pop(toPushToUpperLhs)
@@ -134,7 +134,7 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
 
         val delta = if (this.color == GREEN && lowerSubStack != null && lowerSubStack.stack.color == RED) 1 else 0
         val canPopFromThisRhs = thisRhs.size - delta
-        val toPushToUpperRhs = minOf((MAX_BUFFER_SIZE shr 2), canPopFromThisRhs)
+        val toPushToUpperRhs = minOf(EMPTY_UPPER_LEVEL_SHOULD_MOVE_FROM_THIS_LEVEL, canPopFromThisRhs)
 
         val upperRhs = thisRhs.moveToUpperLevelBuffer(toPushToUpperRhs)
         thisRhs = thisRhs.pop(toPushToUpperRhs)
@@ -172,11 +172,13 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         var thisLhs = thisLevel.lhs
         var thisRhs = thisLevel.rhs
 
-
         if (upperLhs.size <= YELLOW_LOW) {
-            val thisLhsTop = thisLhs.moveToUpperLevelBuffer(1)
+            val canPopFromThisLhs = thisLhs.size - delta
+            val toMoveToUpperLhs = minOf(EMPTY_UPPER_LEVEL_SHOULD_MOVE_FROM_THIS_LEVEL, canPopFromThisLhs)
+
+            val thisLhsTop = thisLhs.moveToUpperLevelBuffer(toMoveToUpperLhs)
             upperLhs = upperLhs.prependSavingOrder(thisLhsTop)
-            thisLhs = thisLhs.pop(1)
+            thisLhs = thisLhs.pop(toMoveToUpperLhs)
         } else if (upperLhs.size >= YELLOW_HIGH) {
             val canMoveToThisLhs = MAX_BUFFER_SIZE - thisLhs.size - delta
             val toMoveToThisLhs = minOf(FULL_UPPER_LEVEL_SHOULD_MOVE_TO_THIS_LEVEL, canMoveToThisLhs shl 1)
@@ -186,9 +188,12 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         }
 
         if (upperRhs.size <= YELLOW_LOW) {
-            val thisRhsTop = thisRhs.moveToUpperLevelBuffer(1)
+            val canPopFromThisRhs = thisRhs.size - delta
+            val toMoveToUpperRhs = minOf(EMPTY_UPPER_LEVEL_SHOULD_MOVE_FROM_THIS_LEVEL, canPopFromThisRhs)
+
+            val thisRhsTop = thisRhs.moveToUpperLevelBuffer(toMoveToUpperRhs)
             upperRhs = upperRhs.prependSavingOrder(thisRhsTop)
-            thisRhs = thisRhs.pop(1)
+            thisRhs = thisRhs.pop(toMoveToUpperRhs)
         } else if (upperRhs.size >= YELLOW_HIGH) {
             val canMoveToThisRhs = MAX_BUFFER_SIZE - thisRhs.size - delta
             val toMoveToThisRhs = minOf(FULL_UPPER_LEVEL_SHOULD_MOVE_TO_THIS_LEVEL, canMoveToThisRhs shl 1)

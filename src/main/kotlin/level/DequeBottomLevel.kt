@@ -105,8 +105,8 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
 
         if (thisLhs.size == 0) {
             if (thisRhs.size > 1) {
-                val newLhs = thisRhs.pop(thisRhs.size - 1).moveToOppositeSideBuffer()
-                val newRhs = thisRhs.removeBottom(1)
+                val newLhs = thisRhs.pop().moveToOppositeSideBuffer()
+                val newRhs = thisRhs.removeBottom(thisRhs.size - 1)
                 val newThis = DequeBottomLevel<T>(newLhs, newRhs)
                 return NonBottomLevel<Any?>(upperLhs, upperRhs, newThis)
             }
@@ -121,8 +121,8 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
         }
         if (thisRhs.size == 0) {
             if (thisLhs.size > 1) {
-                val newRhs = thisLhs.pop(thisLhs.size - 1).moveToOppositeSideBuffer()
-                val newLhs = thisLhs.removeBottom(1)
+                val newRhs = thisLhs.pop().moveToOppositeSideBuffer()
+                val newLhs = thisLhs.removeBottom(thisLhs.size - 1)
                 val newThis = DequeBottomLevel<T>(newLhs, newRhs)
                 return NonBottomLevel<Any?>(upperLhs, upperRhs, newThis)
             }

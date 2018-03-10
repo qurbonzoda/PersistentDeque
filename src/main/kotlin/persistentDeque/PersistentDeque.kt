@@ -104,8 +104,9 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
     }
 
     private fun makeGreenNextSubStackTop(newTopSubStack: ImmutableLevel): ImmutableDeque<T> {
-//        println(this.size + 1 - lastRegularizationSize)
-//        lastRegularizationSize = this.size + 1
+//        val diff = newTopSubStack.subStackSize(0) - this.topSubStack.subStackSize(0)
+//        println(this.size + diff - lastRegularizationSize)
+//        lastRegularizationSize = this.size + diff
 
         val upperLevel = this.next.stack
         var lowerLevel = this.next.stack.next
@@ -113,7 +114,7 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
         if (lowerLevel == null) {
             lowerLevel = this.next.next?.stack
             lowerSubStack = this.next.next?.next
-            if (lowerLevel == null) {   // upperLevel is DequeBottomLevel
+            if (lowerLevel == null) {
 //                assert(upperLevel.lhs.size == RED_HIGH || upperLevel.rhs.size == RED_HIGH)
 //                assert(upperLevel is DequeBottomLevel<*>)
 //                assert(lowerSubStack == null)
@@ -147,8 +148,9 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
     }
 
     private fun makeGreenTopSubStackTopPerforming(operation: Int, value: T?): ImmutableDeque<T> {
-//        println(this.size + 1 - lastRegularizationSize)
-//        lastRegularizationSize = this.size + 1
+//        val diff = if (operation == PUSH_TO_LHS || operation == PUSH_TO_RHS) 1 else -1
+//        println(this.size + diff - lastRegularizationSize)
+//        lastRegularizationSize = this.size + diff
 
         val upperLevel = this.topSubStack
         var lowerLevel = this.topSubStack.next
@@ -165,9 +167,11 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
             POP_FROM_RHS -> lowerLevel.makeGreenUpperLevelPoppingRhs(upperLevel, lowerSubStack)
             else ->         throw AssertionError("Unreachable")
         }
+
 //        if (result is PersistentDeque) {
 //            result.checkInvariants()
 //        }
+
         return result
     }
 
