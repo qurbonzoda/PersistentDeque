@@ -3,6 +3,7 @@ package level
 import buffer.*
 import deque.ImmutableDeque
 import persistentDeque.DequeSubStack
+import persistentDeque.NextHolder
 import persistentDeque.PersistentDeque
 
 internal class NonBottomLevel(lhs: ImmutableBuffer,
@@ -72,12 +73,12 @@ internal class NonBottomLevel(lhs: ImmutableBuffer,
 
         val newThis = NonBottomLevel(thisLhs, thisRhs, this.next)
         if (newThis.color == RED) {
-            val newUpper = SubStackBottomLevel(upperLhs, upperRhs)
-            return PersistentDeque(newUpper, DequeSubStack(newThis, lowerSubStack), newSize)
+            val newNext = NextHolder(null, DequeSubStack(newThis, lowerSubStack))
+            return PersistentDeque(upperLhs, upperRhs, newNext, newSize)
         }
 
-        val newUpper = NonBottomLevel(upperLhs, upperRhs, newThis)
-        return PersistentDeque(newUpper, lowerSubStack, newSize)
+        val newNext = NextHolder(newThis, lowerSubStack)
+        return PersistentDeque(upperLhs, upperRhs, newNext, newSize)
     }
 
     override fun <T> makeImmutableDeque(topSubStack: ImmutableLevel,
@@ -98,7 +99,8 @@ internal class NonBottomLevel(lhs: ImmutableBuffer,
             DequeSubStack(newUpper, lowerSubStack)
         }
 
-        return PersistentDeque(topSubStack, nextSubStack, newSize)
+        val newNext = NextHolder(topSubStack.next, nextSubStack)
+        return PersistentDeque(topSubStack.lhs, topSubStack.rhs, newNext, newSize)
     }
 
     // MARK: util

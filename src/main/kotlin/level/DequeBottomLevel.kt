@@ -3,6 +3,7 @@ package level
 import buffer.*
 import deque.ImmutableDeque
 import persistentDeque.DequeSubStack
+import persistentDeque.NextHolder
 import persistentDeque.PersistentDeque
 
 internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
@@ -35,7 +36,8 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
             if (newUpper.next == null) {
                 return newUpper as ImmutableDeque<T>
             }
-            return PersistentDeque(newUpper, null, newSize)
+            val newNext = NextHolder(newUpper.next, null)
+            return PersistentDeque(newUpper.lhs, newUpper.rhs, newNext, newSize)
         }
 
 //        assert(thisLhs.size > 0 && thisRhs.size > 0)
@@ -44,8 +46,8 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
 
 //        assert(newThis.color == RED)
 
-        val newUpper = SubStackBottomLevel(upperLhs, upperRhs)
-        return PersistentDeque(newUpper, DequeSubStack(newThis, null), newSize)
+        val newNext = NextHolder(null, DequeSubStack(newThis, null))
+        return PersistentDeque(upperLhs, upperRhs, newNext, newSize)
     }
 
     override fun <T> makeImmutableDeque(topSubStack: ImmutableLevel,
@@ -60,7 +62,8 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
 
         if (thisLhs.size == 0 || thisRhs.size == 0 || (thisLhs.color != RED && thisRhs.color != RED)) {
             val newUpper = this.makeImmutableLevel(upperLhs, upperRhs, thisLhs, thisRhs)
-            return PersistentDeque(topSubStack, DequeSubStack(newUpper, null), newSize)
+            val newNext = NextHolder(topSubStack.next, DequeSubStack(newUpper, null))
+            return PersistentDeque(topSubStack.lhs, topSubStack.rhs, newNext, newSize)
         }
 
 //        assert(thisLhs.size > 0 && thisRhs.size > 0)
@@ -71,7 +74,8 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
 
         val newUpper = SubStackBottomLevel(upperLhs, upperRhs)
         val nextSubStack = DequeSubStack(newUpper, DequeSubStack(newThis, null))
-        return PersistentDeque(topSubStack, nextSubStack, newSize)
+        val newNext = NextHolder(topSubStack.next, nextSubStack)
+        return PersistentDeque(topSubStack.lhs, topSubStack.rhs, newNext, newSize)
     }
 
     private fun makeImmutableLevel(upperLhs: ImmutableBuffer,
@@ -175,8 +179,8 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
 //        assert(newLhs.color == GREEN && newRhs.color == GREEN)
 
         val nextLevel = DequeBottomLevel<T>(nextLevelLhs, nextLevelRhs)
-        val topLevel = NonBottomLevel(newLhs, newRhs, nextLevel)
-        return PersistentDeque(topLevel, null, this.size + 1)
+        val next = NextHolder(nextLevel, null)
+        return PersistentDeque(newLhs, newRhs, next, this.size + 1)
     }
 
     override fun removeFirst(): ImmutableDeque<T> {
@@ -218,8 +222,8 @@ internal class DequeBottomLevel<T>(lhs: ImmutableBuffer,
 //        assert(newLhs.color == GREEN && newRhs.color == GREEN)
 
         val nextLevel = DequeBottomLevel<T>(nextLevelLhs, nextLevelRhs)
-        val topLevel = NonBottomLevel(newLhs, newRhs, nextLevel)
-        return PersistentDeque(topLevel, null, this.size + 1)
+        val next = NextHolder(nextLevel, null)
+        return PersistentDeque(newLhs, newRhs, next, this.size + 1)
     }
 
     override fun removeLast(): ImmutableDeque<T> {

@@ -4,6 +4,8 @@ import buffer.*
 import deque.ImmutableDeque
 import level.DequeBottomLevel
 import level.ImmutableLevel
+import level.NonBottomLevel
+import level.SubStackBottomLevel
 import java.util.*
 
 const val PUSH_TO_LHS = 0
@@ -11,10 +13,12 @@ const val POP_FROM_LHS = 1
 const val PUSH_TO_RHS = 2
 const val POP_FROM_RHS = 3
 
-internal data class DequeSubStack(val stack: ImmutableLevel, val next: DequeSubStack?)
+internal class DequeSubStack(val stack: ImmutableLevel, val next: DequeSubStack?)
+internal class NextHolder(val nextLevel: ImmutableLevel?, val nextSubStack: DequeSubStack?)
 
-internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
-                                  private val next: DequeSubStack?,
+internal class PersistentDeque<T>(private val lhs: ImmutableBuffer,
+                                  private val rhs: ImmutableBuffer,
+                                  private val next: NextHolder,
                                   override val size: Int): ImmutableDeque<T> {
     override fun isEmpty(): Boolean {
         return false
@@ -22,85 +26,84 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
 
     override val first: T?
         get() {
-            return this.topSubStack.lhs.top as T
+            return this.lhs.top as T
         }
 
     override val last: T?
         get() {
-            return this.topSubStack.rhs.top as T
+            return this.rhs.top as T
         }
 
     override fun addFirst(value: T): ImmutableDeque<T> {
-        if (this.topSubStack.lhs.size + 1 < YELLOW_HIGH) {
-            val newTopSubStack = this.topSubStack.withNewLhs(this.topSubStack.lhs.push(value))
-            return PersistentDeque(newTopSubStack, this.next, this.size + 1)
+        if (this.lhs.size + 1 < YELLOW_HIGH) {
+            val newLhs = this.lhs.push(value)
+            return PersistentDeque(newLhs, this.rhs, this.next, this.size + 1)
         }
-        if (this.topSubStack.lhs.size + 1 == YELLOW_HIGH) {
-            val newTopSubStack = this.topSubStack.withNewLhs(this.topSubStack.lhs.push(value))
-            return this.dequeWithYellowTopLevel(newTopSubStack, this.size + 1)
+        if (this.lhs.size + 1 == YELLOW_HIGH) {
+            val newLhs = this.lhs.push(value)
+            return this.dequeWithYellowTopLevel(newLhs, this.rhs, this.size + 1)
         }
         return this.makeGreenTopSubStackTopPerforming(PUSH_TO_LHS, value, this.size + 1)
     }
 
     override fun removeFirst(): ImmutableDeque<T> {
-        if (this.topSubStack.lhs.size - 1 > YELLOW_LOW) {
-            val newTopSubStack = this.topSubStack.withNewLhs(this.topSubStack.lhs.pop())
-            return PersistentDeque(newTopSubStack, this.next, this.size - 1)
+        if (this.lhs.size - 1 > YELLOW_LOW) {
+            val newLhs = this.lhs.pop()
+            return PersistentDeque(newLhs, this.rhs, this.next, this.size - 1)
         }
-        if (this.topSubStack.lhs.size - 1 == YELLOW_LOW) {
-            val newTopSubStack = this.topSubStack.withNewLhs(this.topSubStack.lhs.pop())
-            return this.dequeWithYellowTopLevel(newTopSubStack, this.size - 1)
+        if (this.lhs.size - 1 == YELLOW_LOW) {
+            val newLhs = this.lhs.pop()
+            return this.dequeWithYellowTopLevel(newLhs, this.rhs, this.size - 1)
         }
         return this.makeGreenTopSubStackTopPerforming(POP_FROM_LHS, null, this.size - 1)
     }
 
     override fun addLast(value: T): ImmutableDeque<T> {
-        if (this.topSubStack.rhs.size + 1 < YELLOW_HIGH) {
-            val newTopSubStack = this.topSubStack.withNewRhs(this.topSubStack.rhs.push(value))
-            return PersistentDeque(newTopSubStack, this.next, this.size + 1)
+        if (this.rhs.size + 1 < YELLOW_HIGH) {
+            val newRhs = this.rhs.push(value)
+            return PersistentDeque(this.lhs, newRhs, this.next, this.size + 1)
         }
-        if (this.topSubStack.rhs.size + 1 == YELLOW_HIGH) {
-            val newTopSubStack = this.topSubStack.withNewRhs(this.topSubStack.rhs.push(value))
-            return this.dequeWithYellowTopLevel(newTopSubStack, this.size + 1)
+        if (this.rhs.size + 1 == YELLOW_HIGH) {
+            val newRhs = this.rhs.push(value)
+            return this.dequeWithYellowTopLevel(this.lhs, newRhs, this.size + 1)
         }
         return this.makeGreenTopSubStackTopPerforming(PUSH_TO_RHS, value, this.size + 1)
     }
 
     override fun removeLast(): ImmutableDeque<T> {
-        if (this.topSubStack.rhs.size - 1 > YELLOW_LOW) {
-            val newTopSubStack = this.topSubStack.withNewRhs(this.topSubStack.rhs.pop())
-            return PersistentDeque(newTopSubStack, this.next, this.size - 1)
+        if (this.rhs.size - 1 > YELLOW_LOW) {
+            val newRhs = this.rhs.pop()
+            return PersistentDeque(this.lhs, newRhs, this.next, this.size - 1)
         }
-        if (this.topSubStack.rhs.size - 1 == YELLOW_LOW) {
-            val newTopSubStack = this.topSubStack.withNewRhs(this.topSubStack.rhs.pop())
-            return this.dequeWithYellowTopLevel(newTopSubStack, this.size - 1)
+        if (this.rhs.size - 1 == YELLOW_LOW) {
+            val newRhs = this.rhs.pop()
+            return this.dequeWithYellowTopLevel(this.lhs, newRhs, this.size - 1)
         }
-
         return this.makeGreenTopSubStackTopPerforming(POP_FROM_RHS, null, this.size - 1)
     }
 
-    private fun dequeWithYellowTopLevel(newTopSubStack: ImmutableLevel, newSize: Int): ImmutableDeque<T> {
+    private fun dequeWithYellowTopLevel(newLhs: ImmutableBuffer, newRhs: ImmutableBuffer, newSize: Int): ImmutableDeque<T> {
 //        assert(newTopSubStack.color == YELLOW)
 
-        if (this.next == null || this.next.stack.color == GREEN) {
-            return PersistentDeque(newTopSubStack, this.next, newSize)
+        if (this.next.nextSubStack == null || this.next.nextSubStack.stack.color == GREEN) {
+            return PersistentDeque(newLhs, newRhs, this.next, newSize)
         }
 
 //        assert(this.next.stack.color == RED)
 
-        return this.makeGreenNextSubStackTop(newTopSubStack, newSize)
+        return this.makeGreenNextSubStackTop(newLhs, newRhs, newSize)
     }
 
-    private fun makeGreenNextSubStackTop(newTopSubStack: ImmutableLevel, newSize: Int): ImmutableDeque<T> {
+    private fun makeGreenNextSubStackTop(newLhs: ImmutableBuffer, newRhs: ImmutableBuffer, newSize: Int): ImmutableDeque<T> {
 //        println(newSize - lastRegularizationSize)
 //        lastRegularizationSize = newSize
 
-        val upperLevel = this.next!!.stack
-        var lowerLevel = this.next.stack.next
-        var lowerSubStack = this.next.next
+        val upperLevel = this.next.nextSubStack!!.stack
+        var lowerLevel = this.next.nextSubStack.stack.next
+        var lowerSubStack = this.next.nextSubStack.next
         if (lowerLevel == null) {
-            lowerLevel = this.next.next?.stack
-            lowerSubStack = this.next.next?.next
+            lowerLevel = this.next.nextSubStack.next?.stack
+            lowerSubStack = this.next.nextSubStack.next?.next
             if (lowerLevel == null) {
 //                assert(upperLevel.lhs.size == RED_HIGH || upperLevel.rhs.size == RED_HIGH)
 //                assert(upperLevel is DequeBottomLevel<*>)
@@ -108,17 +111,19 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
                 if (upperLevel.lhs.size == RED_HIGH && upperLevel.rhs.size + 2 <= GREEN_HIGH) {
                     val toMoveToRhsSide = GREEN_HIGH - upperLevel.rhs.size
                     val fromLhs = upperLevel.lhs.pop(upperLevel.lhs.size - toMoveToRhsSide).moveToOppositeSideBuffer()
-                    val newRhs = upperLevel.rhs.prependSavingOrder(fromLhs)
-                    val newLhs = upperLevel.lhs.removeBottom(toMoveToRhsSide)
-                    val newUpperLevel = DequeBottomLevel<T>(newLhs, newRhs)
-                    return PersistentDeque(newTopSubStack, DequeSubStack(newUpperLevel, null), newSize)
+                    val upperRhs = upperLevel.rhs.prependSavingOrder(fromLhs)
+                    val upperLhs = upperLevel.lhs.removeBottom(toMoveToRhsSide)
+                    val newUpperLevel = DequeBottomLevel<T>(upperLhs, upperRhs)
+                    val newNext = NextHolder(this.next.nextLevel, DequeSubStack(newUpperLevel, null))
+                    return PersistentDeque(newLhs, newRhs, newNext, newSize)
                 } else if (upperLevel.rhs.size == RED_HIGH && upperLevel.lhs.size + 2 <= GREEN_HIGH) {
                     val toMoveToLhsSide = GREEN_HIGH - upperLevel.lhs.size
                     val fromRhs = upperLevel.rhs.pop(upperLevel.rhs.size - toMoveToLhsSide).moveToOppositeSideBuffer()
-                    val newLhs = upperLevel.lhs.prependSavingOrder(fromRhs)
-                    val newRhs = upperLevel.rhs.removeBottom(toMoveToLhsSide)
-                    val newUpperLevel = DequeBottomLevel<T>(newLhs, newRhs)
-                    return PersistentDeque(newTopSubStack, DequeSubStack(newUpperLevel, null), newSize)
+                    val upperLhs = upperLevel.lhs.prependSavingOrder(fromRhs)
+                    val upperRhs = upperLevel.rhs.removeBottom(toMoveToLhsSide)
+                    val newUpperLevel = DequeBottomLevel<T>(upperLhs, upperRhs)
+                    val newNext = NextHolder(this.next.nextLevel, DequeSubStack(newUpperLevel, null))
+                    return PersistentDeque(newLhs, newRhs, newNext, newSize)
                 }
 
                 lowerLevel = DequeBottomLevel<T>(LhsEmptyBuffer, RhsEmptyBuffer)
@@ -126,7 +131,7 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
         }
 
         val result: ImmutableDeque<T>
-                = lowerLevel.makeGreenUpperLevel(upperLevel, newTopSubStack, lowerSubStack, newSize)
+                = lowerLevel.makeGreenUpperLevel(upperLevel, this.topSubStack(newLhs, newRhs), lowerSubStack, newSize)
 
         if (result is PersistentDeque) {
             result.checkInvariants()
@@ -139,19 +144,18 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
 //        println(newSize - lastRegularizationSize)
 //        lastRegularizationSize = newSize
 
-        val upperLevel = this.topSubStack
-        var lowerLevel = this.topSubStack.next
-        var lowerSubStack: DequeSubStack? = this.next
+        var lowerLevel = this.next.nextLevel
+        var lowerSubStack: DequeSubStack? = this.next.nextSubStack
         if (lowerLevel == null) {
-            lowerLevel = this.next!!.stack
-            lowerSubStack = this.next.next
+            lowerLevel = this.next.nextSubStack!!.stack
+            lowerSubStack = this.next.nextSubStack.next
         }
 
         val result: ImmutableDeque<T> = when(operation) {
-            PUSH_TO_LHS ->  lowerLevel.makeGreenUpperLevelPushingLhs(upperLevel, value, lowerSubStack, newSize)
-            POP_FROM_LHS -> lowerLevel.makeGreenUpperLevelPoppingLhs(upperLevel, lowerSubStack, newSize)
-            PUSH_TO_RHS ->  lowerLevel.makeGreenUpperLevelPushingRhs(upperLevel, value, lowerSubStack, newSize)
-            POP_FROM_RHS -> lowerLevel.makeGreenUpperLevelPoppingRhs(upperLevel, lowerSubStack, newSize)
+            PUSH_TO_LHS ->  lowerLevel.makeGreenUpperLevelPushingLhs(this.lhs, this.rhs, value, lowerSubStack, newSize)
+            POP_FROM_LHS -> lowerLevel.makeGreenUpperLevelPoppingLhs(this.rhs, lowerSubStack, newSize)
+            PUSH_TO_RHS ->  lowerLevel.makeGreenUpperLevelPushingRhs(this.lhs, this.rhs, value, lowerSubStack, newSize)
+            POP_FROM_RHS -> lowerLevel.makeGreenUpperLevelPoppingRhs(this.lhs, lowerSubStack, newSize)
             else ->         throw AssertionError("Unreachable")
         }
 
@@ -168,7 +172,7 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
 
         var depth = 0
 
-        val iterator = LevelIterator(this.topSubStack, this.next)
+        val iterator = LevelIterator(this.topSubStack(), this.next.nextSubStack)
         while (iterator.hasNext()) {
             val level = iterator.next()
             level.lhs.addLeafValuesTo(lhsList, depth)
@@ -191,7 +195,7 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
         var lhsIndex = index
         var rhsIndex = this.size - index - 1
 
-        val levelIterator = LevelIterator(this.topSubStack, this.next)
+        val levelIterator = LevelIterator(this.topSubStack(), this.next.nextSubStack)
 
         while (levelIterator.hasNext()) {
             val level = levelIterator.next()
@@ -222,7 +226,7 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
         var rhsIndex = dequeSize - index - 1
 
         val upperSubStacks = Stack<ImmutableLevel>()
-        var subStack: DequeSubStack? = DequeSubStack(this.topSubStack, this.next)
+        var subStack: DequeSubStack? = DequeSubStack(this.topSubStack(), this.next.nextSubStack)
 
         while (subStack != null) {
 
@@ -242,7 +246,8 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
                     while (!upperSubStacks.isEmpty()) {
                         newSubStack = DequeSubStack(upperSubStacks.pop(), newSubStack)
                     }
-                    return PersistentDeque(newSubStack.stack, newSubStack.next, this.size)
+                    val newNext = NextHolder(newSubStack.stack.next, newSubStack.next)
+                    return PersistentDeque(newSubStack.stack.lhs, newSubStack.stack.rhs, newNext, this.size)
                 }
 
                 depth += 1
@@ -262,8 +267,22 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
     }
 
     override fun listIterator(index: Int): ListIterator<T> {
-        val levelIterator = LevelIterator(topSubStack, next)
-        return PersistentDequeIterator(levelIterator, index, size)
+        val levelIterator = LevelIterator(this.topSubStack(), this.next.nextSubStack)
+        return PersistentDequeIterator(levelIterator, index, this.size)
+    }
+
+    private fun topSubStack(): ImmutableLevel {
+        if (this.next.nextLevel == null) {
+            return SubStackBottomLevel(this.lhs, this.rhs)
+        }
+        return NonBottomLevel(this.lhs, this.rhs, this.next.nextLevel)
+    }
+
+    private fun topSubStack(newLhs: ImmutableBuffer, newRhs: ImmutableBuffer): ImmutableLevel {
+        if (this.next.nextLevel == null) {
+            return SubStackBottomLevel(newLhs, newRhs)
+        }
+        return NonBottomLevel(newLhs, newRhs, this.next.nextLevel)
     }
 
     private fun checkInvariants() {
@@ -274,8 +293,8 @@ internal class PersistentDeque<T>(private val topSubStack: ImmutableLevel,
 //        }
 //        println(rhss)
 
-        var topSubStack = this.topSubStack
-        var next: DequeSubStack? = this.next
+        var topSubStack = this.topSubStack()
+        var next: DequeSubStack? = this.next.nextSubStack
 
         var isCurrentLevelTopLevel = true
 

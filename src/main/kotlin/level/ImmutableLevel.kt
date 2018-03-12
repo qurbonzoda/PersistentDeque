@@ -36,14 +36,15 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
                                         lowerSubStack: DequeSubStack?,
                                         newSize: Int): ImmutableDeque<T>
 
-    fun <T> makeGreenUpperLevelPushingLhs(upper: ImmutableLevel,
+    fun <T> makeGreenUpperLevelPushingLhs(topLhs: ImmutableBuffer,
+                                          topRhs: ImmutableBuffer,
                                           valueToPush: Any?,
                                           lowerSubStack: DequeSubStack?,
                                           newSize: Int): ImmutableDeque<T> {
 //        assert(upper.lhs.size == YELLOW_HIGH)
 //        assert(upper.rhs.color != RED)
 
-        var upperLhs = upper.lhs
+        var upperLhs = topLhs
         var thisLhs = this.lhs
 
         val delta = if (this.color == GREEN && lowerSubStack != null && lowerSubStack.stack.color == RED) 1 else 0
@@ -54,7 +55,7 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         thisLhs = upperLhs.pop(toLeaveForUpperLhs).pushAllToNextLevelBuffer(thisLhs)
         upperLhs = upperLhs.removeBottom(toPushToThisLhs).push(valueToPush)
 
-        var upperRhs = upper.rhs
+        var upperRhs = topRhs
         var thisRhs = this.rhs
 
         if (upperRhs.size == YELLOW_LOW) {
@@ -69,7 +70,8 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         return this.makeImmutableDeque(upperLhs, upperRhs, thisLhs, thisRhs, lowerSubStack, newSize)
     }
 
-    fun <T> makeGreenUpperLevelPushingRhs(upper: ImmutableLevel,
+    fun <T> makeGreenUpperLevelPushingRhs(topLhs: ImmutableBuffer,
+                                          topRhs: ImmutableBuffer,
                                           valueToPush: Any?,
                                           lowerSubStack: DequeSubStack?,
                                           newSize: Int): ImmutableDeque<T> {
@@ -77,7 +79,7 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
 //        assert(upper.lhs.color != RED)
 
         var thisRhs = this.rhs
-        var upperRhs = upper.rhs
+        var upperRhs = topRhs
 
         val delta = if (this.color == GREEN && lowerSubStack != null && lowerSubStack.stack.color == RED) 1 else 0
         val canPushToThisRhs = MAX_BUFFER_SIZE - thisRhs.size - delta
@@ -87,7 +89,7 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         thisRhs = upperRhs.pop(toLeaveForUpperRhs).pushAllToNextLevelBuffer(thisRhs)
         upperRhs = upperRhs.removeBottom(toPushToThisRhs).push(valueToPush)
 
-        var upperLhs = upper.lhs
+        var upperLhs = topLhs
         var thisLhs = this.lhs
 
         if (upperLhs.size == YELLOW_LOW) {
@@ -102,7 +104,7 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         return this.makeImmutableDeque(upperLhs, upperRhs, thisLhs, thisRhs, lowerSubStack, newSize)
     }
 
-    fun <T> makeGreenUpperLevelPoppingLhs(upper: ImmutableLevel,
+    fun <T> makeGreenUpperLevelPoppingLhs(topRhs: ImmutableBuffer,
                                           lowerSubStack: DequeSubStack?,
                                           newSize: Int): ImmutableDeque<T> {
 //        assert(upper.lhs.size == RED_LOW)
@@ -117,7 +119,7 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         val upperLhs = thisLhs.moveToUpperLevelBuffer(toPushToUpperLhs)
         thisLhs = thisLhs.pop(toPushToUpperLhs)
 
-        var upperRhs = upper.rhs
+        var upperRhs = topRhs
         var thisRhs = this.rhs
 
         if (upperRhs.size == YELLOW_LOW) {
@@ -132,7 +134,7 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         return this.makeImmutableDeque(upperLhs, upperRhs, thisLhs, thisRhs, lowerSubStack, newSize)
     }
 
-    fun <T> makeGreenUpperLevelPoppingRhs(upper: ImmutableLevel,
+    fun <T> makeGreenUpperLevelPoppingRhs(topLhs: ImmutableBuffer,
                                           lowerSubStack: DequeSubStack?,
                                           newSize: Int): ImmutableDeque<T> {
 //        assert(upper.rhs.size == RED_LOW)
@@ -147,7 +149,7 @@ internal abstract class ImmutableLevel(val lhs: ImmutableBuffer,
         val upperRhs = thisRhs.moveToUpperLevelBuffer(toPushToUpperRhs)
         thisRhs = thisRhs.pop(toPushToUpperRhs)
 
-        var upperLhs = upper.lhs
+        var upperLhs = topLhs
         var thisLhs = this.lhs
 
         if (upperLhs.size == YELLOW_LOW) {
