@@ -20,6 +20,10 @@ interface ImmutableDeque<T> {
     fun listIterator(): ListIterator<T> {
         return this.listIterator(0)
     }
+
+    operator fun iterator(): Iterator<T> {
+        return listIterator()
+    }
 }
 
 fun <T> emptyDeque() = EmptyDeque as ImmutableDeque<T>
