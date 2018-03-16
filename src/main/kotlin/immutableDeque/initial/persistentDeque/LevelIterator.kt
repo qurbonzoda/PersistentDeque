@@ -1,6 +1,6 @@
-package persistentDeque
+package immutableDeque.initial.persistentDeque
 
-import buffer.*
+import immutableDeque.initial.buffer.*
 
 internal class LevelIterator(private var topSubStack: LevelStack?, private var next: DequeSubStack?) {
 

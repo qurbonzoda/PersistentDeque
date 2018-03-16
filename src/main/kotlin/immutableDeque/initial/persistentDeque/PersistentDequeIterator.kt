@@ -1,6 +1,7 @@
-package persistentDeque
+package immutableDeque.initial.persistentDeque
 
-import buffer.*
+import immutableDeque.initial.buffer.*
+import immutableDeque.perfectBinaryTreeIterator.PerfectBinaryTreeIterator
 
 internal class PersistentDequeIterator<out T>(
         levelIterator: LevelIterator, private var index: Int, private val size: Int

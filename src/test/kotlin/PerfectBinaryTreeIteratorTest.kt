@@ -1,5 +1,5 @@
+import immutableDeque.perfectBinaryTreeIterator.PerfectBinaryTreeIterator
 import org.junit.Test
-import persistentDeque.PerfectBinaryTreeIterator
 
 class PerfectBinaryTreeIteratorTest: BaseIteratorTest() {
     @Test

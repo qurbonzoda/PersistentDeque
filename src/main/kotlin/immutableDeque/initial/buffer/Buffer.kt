@@ -1,4 +1,4 @@
-package buffer
+package immutableDeque.initial.buffer
 
 const val RED = 0
 const val YELLOW = 1

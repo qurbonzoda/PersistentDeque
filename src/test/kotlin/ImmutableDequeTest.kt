@@ -1,12 +1,12 @@
+import immutableDeque.ImmutableDeque
+import immutableDeque.initial.persistentDeque.emptyDeque
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertThrows
-import persistentDeque.PersistentDeque
-import persistentDeque.emptyDeque
 import java.util.*
 
-class PersistentDequeTest {
-    // TODO: add tests for PersistentDeque of optional values. e.g. PersistentDeque<Int?>
+class ImmutableDequeTest {
+    // TODO: add tests for ImmutableDeque of optional values. e.g. ImmutableDeque<Int?>
 
     @Test
     fun isEmptyTests() {
@@ -306,7 +306,7 @@ class PersistentDequeTest {
             val shouldAddFirst = operationType > 0.4 &&  operationType < 0.70
 
             val newList: List<Int>
-            val newDeque: PersistentDeque<Int>
+            val newDeque: ImmutableDeque<Int>
 
             if (!list.isEmpty() && shouldRemoveFirst) {
                 newList = list.drop(1)
