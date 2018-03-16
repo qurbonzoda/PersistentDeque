@@ -1,5 +1,5 @@
 import immutableDeque.ImmutableDeque
-import immutableDeque.smallDequeOptimization.stackBuffer.bufferSize13.emptyDeque.emptyDeque
+import immutableDeque.smallDequeOptimization.stackBuffer.bufferSize19.emptyDeque.emptyDeque
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertThrows
