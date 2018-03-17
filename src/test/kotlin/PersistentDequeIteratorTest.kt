@@ -1,5 +1,5 @@
 import immutableDeque.ImmutableDeque
-import immutableDeque.smallDequeOptimization.arrayBuffer.bufferSize25S.emptyDeque.emptyDeque
+import immutableDeque.smallDequeOptimization.arrayBuffer.bufferSize7.emptyDeque.emptyDeque
 import org.junit.Test
 import java.util.*
 
