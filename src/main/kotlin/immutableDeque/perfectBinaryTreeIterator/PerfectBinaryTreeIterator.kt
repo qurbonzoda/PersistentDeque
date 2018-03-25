@@ -1,17 +1,20 @@
 package immutableDeque.perfectBinaryTreeIterator
 
-internal class PerfectBinaryTreeIterator<out T>(
-        root: Any?, depth: Int, private var index: Int
-): ListIterator<T> {
+internal class PerfectBinaryTreeIterator<out T> : ListIterator<T> {
+    private var index = 0
+    private var size = 0
+    private val path = ArrayList<Any?>()
+    private var isInRightEdge = false
 
-    private val size = 1 shl depth
-    private val path = ArrayList<Any?>(depth + 1)
-    private var isInRightEdge: Boolean = index == size
+    fun setTree(root: Any?, depth: Int, index: Int) {
+//        assert(depth >= 0 && index in 0..(1 shl depth))
 
-    init {
-//        assert(depth >= 0 && index in 0..size)
+        this.index = index
+        this.size = 1 shl depth
+        this.path.clear()
+        this.isInRightEdge = index == this.size
 
-        fillPath(root, depth, if (index == size) index - 1 else index)
+        this.fillPath(root, depth, index)
     }
 
     private fun fillPath(root: Any?, depth: Int, index: Int) {

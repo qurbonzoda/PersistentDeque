@@ -9,7 +9,7 @@ internal class PersistentDequeIterator<out T>(
     private val treesIterator: ListIterator<Any?>
     private val depthsIterator: ListIterator<Int>
 
-    private var treeIterator: PerfectBinaryTreeIterator<T>? = null
+    private val treeIterator = PerfectBinaryTreeIterator<T>()
     private var isTreeIteratorResultOfNext: Boolean = false
 
     init {
@@ -52,7 +52,7 @@ internal class PersistentDequeIterator<out T>(
             val nextDepth = depthsIterator.next()
 
             if (lIndex < 1 shl nextDepth) {
-                treeIterator = PerfectBinaryTreeIterator(nextTree, nextDepth, lIndex)
+                treeIterator.setTree(nextTree, nextDepth, lIndex)
                 isTreeIteratorResultOfNext = true
                 break
             }
@@ -80,10 +80,10 @@ internal class PersistentDequeIterator<out T>(
 
         index += 1
 
-        if (!treeIterator!!.hasNext()) {
+        if (!treeIterator.hasNext()) {
             setNextToTreeIterator()
         }
-        return treeIterator!!.next()
+        return treeIterator.next()
     }
 
     override fun nextIndex(): Int {
@@ -95,10 +95,10 @@ internal class PersistentDequeIterator<out T>(
 
         index -= 1
 
-        if (treeIterator?.hasPrevious() != true) {
+        if (!treeIterator.hasPrevious()) {
             setPreviousToTreeIterator()
         }
-        return treeIterator!!.previous()
+        return treeIterator.previous()
     }
 
     override fun previousIndex(): Int {
@@ -113,7 +113,7 @@ internal class PersistentDequeIterator<out T>(
 
         val nextTree = treesIterator.next()
         val nextDepth = depthsIterator.next()
-        treeIterator = PerfectBinaryTreeIterator(nextTree, nextDepth, 0)
+        treeIterator.setTree(nextTree, nextDepth, 0)
         isTreeIteratorResultOfNext = true
     }
 
@@ -125,7 +125,7 @@ internal class PersistentDequeIterator<out T>(
 
         val previousTree = treesIterator.previous()
         val previousDepth = depthsIterator.previous()
-        treeIterator = PerfectBinaryTreeIterator(previousTree, previousDepth, 1 shl previousDepth)
+        treeIterator.setTree(previousTree, previousDepth, 1 shl previousDepth)
         isTreeIteratorResultOfNext = false
     }
 }

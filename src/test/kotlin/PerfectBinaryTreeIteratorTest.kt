@@ -2,6 +2,8 @@ import immutableDeque.perfectBinaryTreeIterator.PerfectBinaryTreeIterator
 import org.junit.Test
 
 class PerfectBinaryTreeIteratorTest: BaseIteratorTest() {
+    private val iterator = PerfectBinaryTreeIterator<Any>()
+
     @Test
     fun nextTests() {
         testNext(createPerfectBinaryTree(0, 0), 0)
@@ -24,7 +26,7 @@ class PerfectBinaryTreeIteratorTest: BaseIteratorTest() {
     private fun testNext(root: Any, height: Int) {
         val list = asList(root, height)
         baseTestNext(list, { index ->
-            PerfectBinaryTreeIterator(root, height, index)
+            this.createIterator(root, height, index)
         })
     }
 
@@ -49,7 +51,12 @@ class PerfectBinaryTreeIteratorTest: BaseIteratorTest() {
     private fun testPrevious(root: Any, height: Int) {
         val list = asList(root, height)
         baseTestPrevious(list, { index ->
-            PerfectBinaryTreeIterator(root, height, index)
+            this.createIterator(root, height, index)
         })
+    }
+
+    private fun createIterator(root: Any, height: Int, index: Int): PerfectBinaryTreeIterator<Any> {
+        this.iterator.setTree(root, height, index)
+        return this.iterator
     }
 }
