@@ -1,8 +1,9 @@
 package immutableDeque.childCount4.bufferSize16.persistentDeque
 
+import immutableDeque.childCount4.LOG_CHILD_COUNT
 import immutableDeque.childCount4.bufferSize16.buffer.ImmutableBuffer
 import immutableDeque.childCount4.childCountToThePow
-import immutableDeque.perfectBinaryTreeIterator.PerfectBinaryTreeIterator
+import immutableDeque.perfectBinaryTreeIterator.ChildCountTrieIterator
 
 internal class PersistentDequeIterator<out T>(
         levelIterator: LevelIterator, private var index: Int, private val size: Int
@@ -10,7 +11,7 @@ internal class PersistentDequeIterator<out T>(
     private val treesIterator: ListIterator<Any?>
     private val depthsIterator: ListIterator<Int>
 
-    private val treeIterator = PerfectBinaryTreeIterator<T>()
+    private val treeIterator = ChildCountTrieIterator<T>(LOG_CHILD_COUNT)
     private var isTreeIteratorResultOfNext: Boolean = false
 
     init {
